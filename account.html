@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your Account — B-Lite Food</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="account" data-header="solid">
+<div class="header-spacer"></div>
+<main id="main" class="acct-page">
+  <div class="container" data-root></div>
+</main>
+<script>
+/* Account: email + password sign-in / registration and the customer dashboard.
+   Prototype: accounts, orders and favourites live in this browser (see B.register / B.login in app.js).
+   PRODUCTION: Supabase Auth + the orders / catering_bookings tables, scoped by row-level security. */
+Blite.ready(function () {
+  var B = Blite, D = BliteData, $ = B.$, $$ = B.$$, I = B.icon, esc = B.esc;
+  var root = $("[data-root]");
+  var fmtDate = function (d, o) { return new Date(d).toLocaleDateString("en-GB", o || { day: "numeric", month: "short", year: "numeric" }); };
+
+  function markBottomNav() {
+    var orders = location.hash === "#orders";
+    $$(".bottom-nav a").forEach(function (a) {
+      var h = a.getAttribute("href");
+      var on = h === "account.html#orders" ? orders : h === "account.html" ? !orders : null;
+      if (on === null) return;
+      if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+  }
+
+  /* ================= AUTH ================= */
+  function pwField(id, label, auto) {
+    return '<div class="field"><label for="' + id + '">' + label + '</label><div class="pw-wrap"><input class="input" id="' + id + '" type="password" autocomplete="' + auto + '" required minlength="8">' +
+      '<button type="button" class="pw-toggle" data-pw-toggle="' + id + '" aria-label="Show password">' + I("eye") + '</button></div><span class="error"></span></div>';
+  }
+  function authView() {
+    var mode = B.params.get("register") === "1" ? "register" : "signin";
+    root.innerHTML =
+      '<div class="auth">' +
+        '<aside class="auth__art" aria-hidden="true">' +
+          '<img src="assets/img/menu/seafood-okra.webp" alt="">' +
+          '<div class="auth__art-copy"><img class="auth__logo" src="assets/img/brand/logo.webp" alt="">' +
+            '<p class="auth__quote">A taste of home, <em>made easy.</em></p>' +
+            '<ul class="auth__perks"><li>' + I("receipt", "i-sm") + 'Track every order</li><li>' + I("repeat", "i-sm") + 'Reorder favourites in one tap</li><li>' + I("pin", "i-sm") + 'Save your delivery addresses</li></ul></div>' +
+        '</aside>' +
+        '<section class="auth__panel">' +
+          '<div class="auth__tabs" role="tablist"><button role="tab" data-mode="signin" aria-selected="' + (mode === "signin") + '">Sign in</button><button role="tab" data-mode="register" aria-selected="' + (mode === "register") + '">Create account</button><span class="auth__tab-ink"></span></div>' +
+          '<div data-auth-form></div>' +
+          '<div class="auth__or"><span>or</span></div>' +
+          '<div class="auth__alt"><a class="btn btn--ghost btn--block" href="menu.html">Continue as guest</a><button class="btn btn--ghost btn--block" type="button" data-demo>' + I("sparkle", "i-sm") + ' Explore a demo account</button></div>' +
+          '<p class="auth__fine">' + I("lock", "i-sm") + ' You never need an account to order. Guest checkout is always available.</p>' +
+        '</section>' +
+      '</div>';
+    paintForm(mode);
+  }
+  function paintForm(mode) {
+    $$("[data-mode]").forEach(function (b) { b.setAttribute("aria-selected", b.dataset.mode === mode); });
+    $(".auth").dataset.authMode = mode;
+    var f = $("[data-auth-form]");
+    if (mode === "signin") {
+      f.innerHTML = '<h1 class="auth__title">Welcome back</h1><p class="auth__sub">Sign in to track orders and reorder your favourites.</p>' +
+        '<form novalidate data-signin><div class="auth__fields">' +
+          '<div class="field"><label for="si-em">Email</label><input class="input" id="si-em" type="email" autocomplete="email" value="' + esc(B.params.get("email") || "") + '" required><span class="error">Please enter a valid email.</span></div>' +
+          pwField("si-pw", 'Password <button type="button" class="auth__forgot" data-forgot>Forgot password?</button>', "current-password") +
+        '</div><div data-form-err></div><button class="btn btn--block auth__submit" type="submit">Sign in ' + I("arrow") + '</button></form>' +
+        '<p class="auth__switch">New to B-Lite? <button type="button" data-mode="register">Create an account</button></p>';
+    } else {
+      f.innerHTML = '<h1 class="auth__title">Create your account</h1><p class="auth__sub">It takes less than a minute.</p>' +
+        '<form novalidate data-register><div class="auth__fields">' +
+          '<div class="form-grid"><div class="field"><label for="rg-fn">First name</label><input class="input" id="rg-fn" autocomplete="given-name" required><span class="error">Please enter your first name.</span></div>' +
+          '<div class="field"><label for="rg-ln">Last name</label><input class="input" id="rg-ln" autocomplete="family-name"></div></div>' +
+          '<div class="field"><label for="rg-em">Email</label><input class="input" id="rg-em" type="email" autocomplete="email" required><span class="error">Please enter a valid email.</span></div>' +
+          '<div class="field"><label for="rg-ph">Mobile <span class="muted">(optional, for delivery updates)</span></label><input class="input" id="rg-ph" type="tel" autocomplete="tel" placeholder="07123 456789"></div>' +
+          pwField("rg-pw", "Password", "new-password") +
+          '<div class="pw-meter" data-meter aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="pw-hint" data-meter-text>At least 8 characters.</p>' +
+          '<label class="check auth__check"><input type="checkbox" id="rg-mk"><span>Send me new dishes and offers by email (optional)</span></label>' +
+        '</div><div data-form-err></div><button class="btn btn--block auth__submit" type="submit">Create account ' + I("arrow") + '</button>' +
+        '<p class="auth__terms">By creating an account you agree to our <a href="legal.html?page=terms">Terms</a> and <a href="legal.html?page=privacy">Privacy policy</a>.</p></form>' +
+        '<p class="auth__switch">Already have an account? <button type="button" data-mode="signin">Sign in</button></p>';
+    }
+    var first = f.querySelector("input"); if (first && window.innerWidth > 768) first.focus();
+  }
+  function fieldErr(id, msg) { var el = $("#" + id).closest(".field"); el.classList.add("has-error"); if (msg) el.querySelector(".error").textContent = msg; }
+  function clearErrs(form) { $$(".has-error", form).forEach(function (x) { x.classList.remove("has-error"); }); $("[data-form-err]").innerHTML = ""; }
+  function formErr(msg) { $("[data-form-err]").innerHTML = '<div class="notice notice--error" role="alert">' + I("alert") + '<span>' + msg + '</span></div>'; }
+  function strength(pw) { var s = 0; if (pw.length >= 8) s++; if (pw.length >= 12) s++; if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++; if (/\d/.test(pw) || /[^\w]/.test(pw)) s++; return pw.length < 8 ? Math.min(s, 1) : s; }
+  function afterAuth() { var next = B.params.get("next"); if (next && /^[a-z-]+\.html(\?[\w=&%-]*)?$/.test(next)) location.href = next; else { history.replaceState(null, "", "account.html"); render(); window.scrollTo(0, 0); } }
+  var emailOk = function (v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); };
+
+  root.addEventListener("click", function (e) {
+    var m = e.target.closest("button[data-mode]"); if (m && $(".auth")) { paintForm(m.dataset.mode); return; }
+    var t = e.target.closest("[data-pw-toggle]");
+    if (t) { var inp = $("#" + t.dataset.pwToggle), show = inp.type === "password"; inp.type = show ? "text" : "password"; t.innerHTML = I(show ? "eye-off" : "eye"); t.setAttribute("aria-label", show ? "Hide password" : "Show password"); return; }
+    if (e.target.closest("[data-forgot]")) { e.preventDefault(); var em = $("#si-em").value; B.toast(emailOk(em) ? "If there's an account for " + esc(em) + ", we've emailed a reset link." : "Enter your email above, then tap “Forgot password?”."); return; }
+    if (e.target.closest("[data-demo]")) { seedDemo(); afterAuth(); B.toast("You're exploring a demo account."); }
+  });
+  root.addEventListener("input", function (e) {
+    if (e.target.id === "rg-pw") {
+      var s = strength(e.target.value), labels = ["At least 8 characters.", "Weak — add more characters.", "Okay — try mixing upper and lower case.", "Good.", "Strong password."];
+      $$("[data-meter] i").forEach(function (b, i) { b.className = i < s ? "on s" + s : ""; });
+      $("[data-meter-text]").textContent = e.target.value ? labels[s] : labels[0];
+    }
+    var fld = e.target.closest(".field.has-error"); if (fld) fld.classList.remove("has-error");
+  });
+  root.addEventListener("submit", async function (e) {
+    var form = e.target;
+    if (form.matches("[data-signin]")) {
+      e.preventDefault(); clearErrs(form);
+      var em = $("#si-em").value, pw = $("#si-pw").value;
+      if (!emailOk(em)) return fieldErr("si-em");
+      if (!pw) return fieldErr("si-pw", "Please enter your password.");
+      var btn = $(".auth__submit", form); btn.classList.add("is-loading");
+      var r = await B.login(em, pw); btn.classList.remove("is-loading");
+      if (!r.ok) return formErr("That email and password don't match an account. Check them and try again, or create an account.");
+      afterAuth(); B.toast("Welcome back, " + esc(B.user().firstName || "") + ".");
+    } else if (form.matches("[data-register]")) {
+      e.preventDefault(); clearErrs(form);
+      var fn = $("#rg-fn").value.trim(), em2 = $("#rg-em").value, pw2 = $("#rg-pw").value, bad = false;
+      if (!fn) { fieldErr("rg-fn"); bad = true; }
+      if (!emailOk(em2)) { fieldErr("rg-em"); bad = true; }
+      if (pw2.length < 8) { fieldErr("rg-pw", "Use at least 8 characters."); bad = true; }
+      if (bad) return;
+      var btn2 = $(".auth__submit", form); btn2.classList.add("is-loading");
+      var r2 = await B.register({ firstName: fn, lastName: $("#rg-ln").value.trim(), email: em2, phone: $("#rg-ph").value.trim(), password: pw2 });
+      btn2.classList.remove("is-loading");
+      if (!r2.ok) return formErr('There\'s already an account with that email. <button type="button" data-mode="signin" style="text-decoration:underline;font-weight:600">Sign in instead</button>');
+      B.updateProfile({ marketing: $("#rg-mk").checked });
+      afterAuth(); B.toast("Welcome to B-Lite, " + esc(fn) + "!");
+    } else if (form.matches("[data-addr]")) {
+      e.preventDefault();
+      var pc = B.normalisePostcode($("#apc").value);
+      if (!pc) { $("#apc").closest(".field").classList.add("has-error"); return; }
+      B.store.set("addresses", B.store.get("addresses", []).concat({ label: $("#al").value || "Address", line1: $("#a1").value, postcode: pc })); render(); B.toast("Address saved.");
+    } else if (form.matches("[data-profile]")) {
+      e.preventDefault();
+      B.updateProfile({ firstName: $("#pf").value.trim(), lastName: $("#pl").value.trim(), phone: $("#pp").value.trim() }); B.toast("Profile updated.");
+    }
+  });
+
+  /* ================= DEMO ACCOUNT ================= */
+  function seedDemo() {
+    var email = "demo@blitefood.co.uk", now = Date.now(), min = 60000, day = 864e5;
+    var line = function (id, portion, qty) { return { id: id, portion: portion, addons: [], qty: qty, key: id + "|" + portion + "|" }; };
+    var mk = function (id, placed, due, lines) {
+      var sub = lines.reduce(function (s, l) { return s + B.unitPrice(l) * l.qty; }, 0);
+      return { id: id, placedAt: new Date(placed).toISOString(), dueAt: new Date(due).toISOString(), type: "delivery", when: "schedule", lines: lines, subtotal: sub, fee: 3.5, total: sub + 3.5, status: "paid", demo: true,
+        customer: { firstName: "Ada", lastName: "Okafor", email: email, phone: "07123 456789" }, address: { line1: "12 Park Street", town: "Hatfield", postcode: "AL10 9AB" } };
+    };
+    var orders = B.orders().filter(function (o) { return !o.demo; });
+    orders = [
+      mk("BL-2031", now - 25 * min, now + 50 * min, [line("jollof-rice-meal", "1l", 2), line("puff-puff", "40pcs", 1)]),
+      mk("BL-2017", now - 9 * day, now - 9 * day + 5 * 3600000, [line("ayamase", "1l", 1), line("pounded-yam", "10pcs", 1)]),
+      mk("BL-1998", now - 23 * day, now - 23 * day + 4 * 3600000, [line("peppered-goat-meat", "30pcs", 1), line("plantain", "smalltray", 1)]),
+    ].concat(orders);
+    B.store.set("orders", orders);
+    B.store.set("favs.beforeDemo", B.favs());
+    B.store.set("favs", ["jollof-rice", "assorted-egusi-soup", "seafood-okra", "puff-puff"]);
+    var enq = B.store.get("enquiries", []).filter(function (x) { return !x.demo; });
+    enq.unshift({ id: "CT-2041", type: "Birthday party", guests: 60, date: new Date(now + 26 * day).toISOString(), status: "Quote sent", email: email, demo: true });
+    B.store.set("enquiries", enq);
+    if (!B.store.get("addresses", []).length) B.store.set("addresses", [{ label: "Home", line1: "12 Park Street, Hatfield", postcode: "AL10 9AB", demo: true }]);
+    B.signIn({ firstName: "Ada", lastName: "Okafor", email: email, phone: "07123 456789", since: new Date(now - 180 * day).toISOString(), demo: true });
+  }
+  function clearDemo() {
+    B.store.set("orders", B.orders().filter(function (o) { return !o.demo; }));
+    B.store.set("enquiries", B.store.get("enquiries", []).filter(function (x) { return !x.demo; }));
+    B.store.set("addresses", B.store.get("addresses", []).filter(function (a) { return !a.demo; }));
+    B.store.set("favs", B.store.get("favs.beforeDemo", [])); B.store.del("favs.beforeDemo");
+  }
+
+  /* ================= DASHBOARD ================= */
+  function stage(o) {
+    var now = Date.now(), placed = new Date(o.placedAt).getTime(), due = new Date(o.dueAt).getTime();
+    if (o.status === "cancelled") return { label: "Cancelled", cls: "muted", pct: 0, done: true };
+    if (now > due + 30 * 60000) return { label: o.type === "pickup" ? "Collected" : "Delivered", cls: "green", pct: 100, done: true };
+    var pct = Math.max(12, Math.min(92, (now - placed) / Math.max(1, due - placed) * 100));
+    if (due - now > 20 * 3600000) return { label: "Scheduled", cls: "orange", pct: 12, step: 0 };
+    var step = pct < 30 ? 0 : pct < 70 ? 1 : 2;
+    return { label: ["Order received", "Preparing your food", o.type === "pickup" ? "Ready soon" : "Out for delivery"][step], cls: "red", pct: pct, step: step };
+  }
+  var sections = [["overview", "grid", "Overview"], ["orders", "receipt", "Orders"], ["favourites", "heart", "Favourites"], ["catering", "chef", "Catering"], ["addresses", "pin", "Addresses"], ["profile", "user", "Profile"], ["settings", "settings", "Settings"]];
+
+  function thumbs(o) {
+    return '<span class="thumb-stack">' + o.lines.slice(0, 3).map(function (l) { var p = B.product(l.id); return p ? '<span>' + B.productImg(p) + '</span>' : ""; }).join("") + '</span>';
+  }
+  function orderRow(o) {
+    var s = stage(o);
+    var names = o.lines.map(function (l) { var p = B.product(l.id); return p ? l.qty + "× " + p.name : ""; }).filter(Boolean).join(", ");
+    return '<div class="ord-row">' + thumbs(o) +
+      '<a class="ord-row__main" href="order.html?id=' + o.id + '"><strong>#' + o.id + '</strong><span class="ord-row__items">' + esc(names) + '</span><span class="ord-row__date">' + fmtDate(o.placedAt) + '</span></a>' +
+      '<span class="status status--' + s.cls + '">' + s.label + '</span>' +
+      '<span class="ord-row__total">' + B.money(o.total) + '</span>' +
+      '<button class="btn btn--sm btn--ghost ord-row__again" data-reorder="' + o.id + '">' + I("repeat", "i-sm") + ' Reorder</button></div>';
+  }
+  function empty(icon, title, text, href, cta) { return '<div class="dash-empty"><span class="dash-empty__icon">' + I(icon) + '</span><h3>' + title + '</h3><p>' + text + '</p>' + (href ? '<a class="btn btn--sm" href="' + href + '">' + cta + ' ' + I("arrow", "i-sm") + '</a>' : "") + '</div>'; }
+  function card(title, body, action) { return '<section class="dash-card"><header class="dash-card__head"><h2>' + title + '</h2>' + (action || "") + '</header>' + body + '</section>'; }
+
+  function view(id, u, ctx) {
+    var orders = ctx.orders, enq = ctx.enq, favs = ctx.favs;
+    switch (id) {
+      case "overview":
+        var h = new Date().getHours(), greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+        var spent = orders.filter(function (o) { return o.status !== "cancelled"; }).reduce(function (s, o) { return s + o.total; }, 0);
+        var active = orders.filter(function (o) { return !stage(o).done; })[0];
+        var nextEvent = enq.filter(function (x) { return new Date(x.date) > new Date(); }).sort(function (a, b) { return new Date(a.date) - new Date(b.date); })[0];
+        var orderedIds = orders.reduce(function (a, o) { return a.concat(o.lines.map(function (l) { return l.id; })); }, []);
+        var recs = D.products.filter(function (p) { return p.featured && orderedIds.indexOf(p.id) < 0 && ctx.favIds.indexOf(p.id) < 0; }).slice(0, 4);
+        if (recs.length < 4) recs = recs.concat(D.products.filter(function (p) { return recs.indexOf(p) < 0 && orderedIds.indexOf(p.id) < 0; }).slice(0, 4 - recs.length));
+        var s = active ? stage(active) : null;
+        return '<section class="dash-hero">' +
+            '<div class="dash-hero__copy"><span class="dash-hero__hi">' + greet + ', ' + esc(u.firstName || "there") + '</span>' +
+              '<h1>What are we eating today?</h1><p>' + (active ? "Your order #" + active.id + " is on its way through our kitchen." : "Fresh Nigerian food, cooked to order in Hatfield.") + '</p>' +
+              '<div class="dash-hero__ctas"><a class="btn btn--white" href="menu.html">Order food ' + I("arrow", "i-sm") + '</a>' + (orders[0] ? '<button class="btn btn--glass" data-reorder="' + orders[0].id + '">' + I("repeat", "i-sm") + ' Reorder last meal</button>' : '<a class="btn btn--glass" href="catering.html">Plan an event</a>') + '</div></div>' +
+            '<div class="dash-hero__food"><img src="assets/img/categories/rice.webp" alt=""></div>' +
+          '</section>' +
+          '<div class="dash-stats">' +
+            stat("receipt", "red", orders.length, orders.length === 1 ? "Order" : "Orders", orders.length ? "Last on " + fmtDate(orders[0].placedAt, { day: "numeric", month: "short" }) : "None yet") +
+            stat("sparkle", "orange", B.money(spent), "Total spent", "Across all orders") +
+            stat("heart", "pink", favs.length, "Favourites", favs.length ? "Ready to reorder" : "Tap ♥ on any dish") +
+            stat("chef", "dark", enq.length, "Catering", enq.length ? enq[0].status : "No events yet") +
+          '</div>' +
+          '<div class="dash-grid">' +
+            card("Active order", active ?
+              '<div class="track"><div class="track__top">' + thumbs(active) + '<div><strong>#' + active.id + '</strong><span>' + (s.label) + '</span></div><span class="track__eta">' + (s.step === undefined ? "Due " : "Arriving ") + new Date(active.dueAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) + (new Date(active.dueAt).toDateString() !== new Date().toDateString() ? " · " + fmtDate(active.dueAt, { weekday: "short", day: "numeric", month: "short" }) : "") + '</span></div>' +
+              '<div class="track__bar"><i style="width:' + Math.round(s.pct) + '%"></i></div><ol class="track__steps">' + ["Received", "Preparing", active.type === "pickup" ? "Ready" : "On the way", active.type === "pickup" ? "Collected" : "Delivered"].map(function (t, i) { return '<li class="' + (i <= (s.step || 0) ? "on" : "") + '">' + t + '</li>'; }).join("") + '</ol>' +
+              '<a class="text-link" href="order.html?id=' + active.id + '">Track order</a></div>'
+              : empty("truck", "Nothing cooking right now", "When you place an order you can follow it here, step by step.", "menu.html", "Browse the menu")) +
+            card("Your next event", nextEvent ?
+              '<div class="event-card"><div class="event-card__date"><strong>' + new Date(nextEvent.date).getDate() + '</strong><span>' + fmtDate(nextEvent.date, { month: "short" }) + '</span></div><div><strong>' + esc(nextEvent.type) + '</strong><span>' + nextEvent.guests + ' guests · ' + nextEvent.id + '</span><span class="status status--orange">' + esc(nextEvent.status) + '</span></div></div><a class="text-link" href="#catering">View catering</a>'
+              : empty("cake", "Planning a celebration?", "Tell us the date and guest count and we'll send a tailored quote.", "catering.html#plan", "Plan an event")) +
+          '</div>' +
+          card("Recent orders", orders.length ? '<div class="ord-list">' + orders.slice(0, 3).map(orderRow).join("") + '</div>' : empty("receipt", "No orders yet", "Your order history will appear here.", "menu.html", "Explore the menu"), orders.length > 3 ? '<a class="text-link" href="#orders">All orders</a>' : "") +
+          card("Picked for you", '<div class="grid grid-4 dash-recs">' + recs.map(function (p) { return B.productCard(p); }).join("") + '</div>', '<a class="text-link" href="menu.html">Full menu</a>');
+      case "orders":
+        return head("Orders", "Every order you've placed with B-Lite.") + card("All orders", orders.length ? '<div class="ord-list">' + orders.map(orderRow).join("") + '</div>' : empty("receipt", "Your order history is empty.", "Once you order, you can track it here.", "menu.html", "Explore the menu"));
+      case "favourites":
+        return head("Favourites", "Dishes you've saved — add them to your basket in one tap.") + (favs.length ? '<div class="grid grid-3">' + favs.map(function (p) { return B.productCard(p); }).join("") + '</div>' : card("Favourites", empty("heart", "No favourites yet.", "Tap the heart on any dish to save it here.", "menu.html", "Browse the menu")));
+      case "addresses":
+        var addrs = B.store.get("addresses", []);
+        return head("Addresses", "Saved for faster checkout.") + card("Saved addresses", (addrs.map(function (a, i) { return '<div class="row-card"><span class="trust__icon">' + I("pin") + '</span><div class="grow"><strong>' + esc(a.label) + '</strong><div class="small muted">' + esc(a.line1) + ', ' + esc(a.postcode) + '</div></div><button class="remove small muted" data-del-addr="' + i + '" style="text-decoration:underline">Remove</button></div>'; }).join("") || '<p class="muted small" style="margin-bottom:12px">No saved addresses yet.</p>') +
+          '<form data-addr novalidate style="margin-top:16px"><div class="form-grid"><div class="field"><label for="al">Label</label><input class="input" id="al" placeholder="Home"></div><div class="field"><label for="apc">Postcode</label><input class="input" id="apc" style="text-transform:uppercase" required><span class="error">Please enter a UK postcode.</span></div><div class="field span-2"><label for="a1">Address</label><input class="input" id="a1" required></div></div><button class="btn btn--sm" style="margin-top:14px" type="submit">Save address</button></form>');
+      case "catering":
+        return head("Catering", "Your event enquiries and quotes.") + card("Bookings", enq.map(function (x) { return '<div class="row-card"><span class="trust__icon">' + I("chef") + '</span><div class="grow"><strong>' + esc(x.type) + ' · ' + x.guests + ' guests</strong><div class="small muted">' + x.id + ' · ' + fmtDate(x.date, { day: "numeric", month: "long", year: "numeric" }) + '</div></div><span class="status status--orange">' + esc(x.status) + '</span></div>'; }).join("") || empty("chef", "No catering bookings yet.", "Planning an event? We'll tailor a menu for you.", "catering.html#plan", "Plan your event"));
+      case "profile":
+        return head("Profile", "Keep your details up to date for smoother deliveries.") + card("Your details", '<form data-profile><div class="form-grid"><div class="field"><label for="pf">First name</label><input class="input" id="pf" value="' + esc(u.firstName || "") + '"></div><div class="field"><label for="pl">Last name</label><input class="input" id="pl" value="' + esc(u.lastName || "") + '"></div><div class="field"><label for="pe">Email</label><input class="input" id="pe" value="' + esc(u.email) + '" disabled></div><div class="field"><label for="pp">Mobile</label><input class="input" id="pp" type="tel" value="' + esc(u.phone || "") + '" placeholder="07123 456789"></div></div><button class="btn btn--sm" style="margin-top:16px" type="submit">Save changes</button></form>') +
+          card("Payment methods", '<div class="notice notice--info">' + I("shield") + '<span>Cards are stored securely by <strong>Stripe</strong>, never on B-Lite\'s servers. Saved cards, Apple Pay and Google Pay appear automatically at checkout.</span></div>');
+      case "settings":
+        return head("Settings", "Notifications, privacy and your account.") + card("Notifications", '<div class="pref-row"><div><strong>Order updates by SMS</strong><p>Texts when your food is on its way.</p></div><label class="switch"><input type="checkbox" checked aria-label="Order updates by SMS"><span></span></label></div><div class="pref-row" style="border:0"><div><strong>New dishes &amp; offers by email</strong><p>A couple of emails a month. Unsubscribe any time.</p></div><label class="switch"><input type="checkbox" data-marketing' + (u.marketing ? " checked" : "") + ' aria-label="Marketing emails"><span></span></label></div>') +
+          card("Privacy", '<div class="pref-row"><div><strong>Cookies</strong><p>Change what we can measure on this device.</p></div><button class="btn btn--sm btn--ghost" data-cookie-prefs>Manage</button></div><div class="pref-row" style="border:0"><div><strong>Delete account</strong><p>We\'ll erase your profile and saved data. Order records are kept as required by law.</p></div><button class="btn btn--sm btn--ghost" data-delete>Request deletion</button></div>');
+    }
+  }
+  function head(t, sub) { return '<header class="dash-head"><h1>' + t + '</h1><p>' + sub + '</p></header>'; }
+  function stat(icon, tone, value, label, sub) { return '<div class="dash-stat dash-stat--' + tone + '"><span class="dash-stat__icon">' + I(icon) + '</span><strong>' + value + '</strong><span class="dash-stat__label">' + label + '</span><span class="dash-stat__sub">' + esc(sub) + '</span></div>'; }
+
+  function render() {
+    markBottomNav();
+    var u = B.user();
+    if (!u) return authView();
+    var cur = (location.hash || "#overview").slice(1);
+    if (!sections.some(function (s) { return s[0] === cur; })) cur = "overview";
+    var mine = function (email) { return (email || "").toLowerCase() === u.email.toLowerCase(); };
+    var ctx = { orders: B.orders().filter(function (o) { return mine(o.customer.email); }), enq: B.store.get("enquiries", []).filter(function (x) { return mine(x.email); }), favIds: B.favs() };
+    ctx.favs = ctx.favIds.map(B.product).filter(Boolean);
+    var counts = { orders: ctx.orders.length, favourites: ctx.favs.length, catering: ctx.enq.length };
+    root.innerHTML = (u.demo ? '<div class="demo-bar">' + I("sparkle", "i-sm") + '<span>You\'re exploring a <strong>demo account</strong> with sample orders.</span><button data-logout>Exit demo</button></div>' : '') +
+      '<div class="dash">' +
+        '<aside class="dash-side">' +
+          '<div class="dash-me"><span class="dash-me__avatar">' + esc(B.initials(u)) + '</span><div><strong>' + esc(((u.firstName || "") + " " + (u.lastName || "")).trim() || u.email) + '</strong><span>Member since ' + fmtDate(u.since || Date.now(), { month: "long", year: "numeric" }) + '</span></div></div>' +
+          '<nav class="dash-nav" aria-label="Account">' + sections.map(function (s) { return '<a href="#' + s[0] + '" aria-current="' + (s[0] === cur ? "page" : "false") + '">' + I(s[1]) + '<span>' + s[2] + '</span>' + (counts[s[0]] ? '<em>' + counts[s[0]] + '</em>' : '') + '</a>'; }).join("") + '</nav>' +
+          '<button class="dash-logout" data-logout>' + I("logout") + '<span>Log out</span></button>' +
+        '</aside>' +
+        '<div class="dash-main" data-view>' + view(cur, u, ctx) + '</div>' +
+      '</div>';
+    var active = $(".dash-nav [aria-current=page]"); if (active && window.innerWidth <= 900) active.scrollIntoView({ inline: "center", block: "nearest" });
+  }
+  window.addEventListener("hashchange", function () { render(); if (window.innerWidth <= 900) window.scrollTo(0, 0); });
+  document.addEventListener("blite:user", function () { if (!$(".auth")) render(); });
+  root.addEventListener("click", function (e) {
+    if (e.target.closest("[data-logout]")) { var wasDemo = (B.user() || {}).demo; if (wasDemo) clearDemo(); B.signOut(); history.replaceState(null, "", "account.html"); render(); B.toast(wasDemo ? "Demo closed." : "You've been logged out."); return; }
+    var r = e.target.closest("[data-reorder]");
+    if (r) { var o = B.order(r.dataset.reorder); if (!o) return; o.lines.forEach(function (l, i) { B.addToCart(l.id, { portion: l.portion, addons: l.addons, qty: l.qty, openDrawer: i === o.lines.length - 1 }); }); return; }
+    var d = e.target.closest("[data-del-addr]"); if (d) { var a = B.store.get("addresses", []); a.splice(+d.dataset.delAddr, 1); B.store.set("addresses", a); render(); }
+    if (e.target.closest("[data-delete]")) B.toast("Deletion request received — we'll confirm by email within 30 days.");
+  });
+  if (B.params.get("demo") === "1" && !B.user()) { seedDemo(); history.replaceState(null, "", "account.html" + location.hash); }
+  root.addEventListener("change", function (e) { if (e.target.matches("[data-marketing]")) { B.updateProfile({ marketing: e.target.checked }); B.toast(e.target.checked ? "You'll hear about new dishes and offers." : "Marketing emails turned off."); } });
+  render();
+});
+</script>
+</body>
+</html>

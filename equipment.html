@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Catering Equipment Hire — B-Lite Food</title>
+  <meta name="description" content="Hire chafing dishes, plates, charger plates, cutlery, tables and chairs for your event. Delivered and collected across Hertfordshire and London.">
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="equipment">
+<main id="main">
+  <section class="page-hero page-hero--split">
+    <div class="container">
+      <div>
+        <span class="eyebrow">Equipment hire</span>
+        <h1 class="h1">Everything you need to <em>serve the occasion.</em></h1>
+        <p class="lead">Chafing dishes, plates, cutlery, glasses and drums for parties, weddings and catering set-ups. Choose your dates and we'll confirm availability with your quote.</p>
+      </div>
+      <div class="page-hero__media" style="background:linear-gradient(160deg,#f8f4f1,#efe8e3)"><span class="dish"><img src="assets/img/equipment/hero.webp" alt="" data-dish="eq-chafing" data-seed="eqhero" data-mode="scene"></span></div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:40px">
+    <div class="container">
+      <div class="panel" style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:32px" aria-label="Rental dates">
+        <div class="field" style="flex:1;min-width:160px"><label for="from">Rental date</label><input class="input" id="from" type="date"></div>
+        <div class="field" style="flex:1;min-width:160px"><label for="to">Return date</label><input class="input" id="to" type="date"></div>
+        <div style="flex:1;min-width:200px;padding-bottom:12px" class="small" data-days-note aria-live="polite"></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="chips" style="margin-bottom:20px" data-groups></div>
+          <div class="grid grid-3" data-eq></div>
+        </div>
+        <aside class="summary sticky" aria-label="Your rental" data-rental></aside>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+Blite.ready(function () {
+  var B = Blite, D = BliteData, $ = B.$, $$ = B.$$, I = B.icon;
+  // Rental basket is separate from the food basket: it's date-based inventory, not immediate consumption.
+  var rental = B.store.get("rental", { from: "", to: "", items: {} });
+  var today = new Date(); today.setDate(today.getDate() + 2);
+  var iso = function (d) { return d.toISOString().slice(0, 10); };
+  if (!rental.from || rental.from < iso(today)) { rental.from = iso(today); var t = new Date(today); t.setDate(t.getDate() + 1); rental.to = iso(t); }
+  $("#from").value = rental.from; $("#to").value = rental.to; $("#from").min = iso(today);
+  var group = "All";
+
+  function days() { var d = Math.round((new Date(rental.to) - new Date(rental.from)) / 864e5); return Math.max(1, d); }
+  // Real stock levels aren't known yet, so availability is confirmed by the team with the quote.
+  // PRODUCTION: SELECT stock - reserved - maintenance FROM equipment_availability(from, to), then show counts.
+  function available(e) { return 50; }
+  function save() { B.store.set("rental", rental); }
+  function paintGroups() {
+    var gs = ["All"].concat(Array.from(new Set(D.equipment.map(function (e) { return e.group; }))));
+    $("[data-groups]").innerHTML = gs.map(function (g) { return '<button class="chip" data-group="' + g + '" aria-pressed="' + (g === group) + '">' + g + '</button>'; }).join("");
+  }
+  function paintGrid() {
+    $("[data-eq]").innerHTML = D.equipment.filter(function (e) { return group === "All" || e.group === group; }).map(function (e) {
+      var a = available(e), q = rental.items[e.id] || 0;
+      var av = '';
+      return '<article class="eq-card" id="' + e.id + '"><div class="eq-card__media">' + B.img(e.img, { dish: e.dish, seed: e.id, alt: e.name }) + '</div>' +
+        '<div class="eq-card__body"><h3>' + e.name + '</h3><p class="small muted" style="line-height:1.45">' + e.desc + '</p>' + av +
+        '<div class="eq-card__row" style="margin-top:auto"><span class="price">' + B.money(e.price) + ' <small class="muted" style="font-weight:500">' + (e.per ? "per " + e.per.replace("20 pieces", "pack of 20") : "each") + '</small></span></div>' +
+        (q ? '<div class="eq-card__row"><div class="qty"><button data-eq-q="-1" data-id="' + e.id + '" aria-label="Fewer">' + I("minus", "i-sm") + '</button><output>' + q + '</output><button data-eq-q="1" data-id="' + e.id + '" aria-label="More"' + (q >= a ? " disabled" : "") + '>' + I("plus", "i-sm") + '</button></div><span class="pill pill--green">' + I("check", "i-sm") + ' In rental</span></div>'
+           : '<button class="btn btn--secondary btn--sm btn--block" data-eq-add="' + e.id + '"' + (a ? "" : " disabled") + '>Add to rental</button>') +
+        '</div></article>';
+    }).join("");
+  }
+  function paintSummary() {
+    var ids = Object.keys(rental.items).filter(function (k) { return rental.items[k] > 0; });
+    var n = days(), sub = 0;
+    var d = function (s) { return new Date(s).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+    $("[data-days-note]").innerHTML = I("calendar", "i-sm") + " " + n + (n === 1 ? " day" : " days") + " · " + d(rental.from) + " → " + d(rental.to);
+    var lines = ids.map(function (id) {
+      var e = D.equipment.find(function (x) { return x.id === id; }), line = e.price * rental.items[id]; sub += line;
+      return '<div class="sum-row" style="font-size:14px"><span>' + rental.items[id] + '× ' + e.name + '</span><span>' + B.money(line) + '</span></div>';
+    }).join("");
+    $("[data-rental]").innerHTML = '<h3>Your rental</h3>' + (ids.length ? lines +
+      '<div class="sum-row sum-row--total"><span>Estimate</span><span>' + B.money(sub) + '</span></div>' +
+      '<p class="small muted" style="margin:8px 0 14px">Hire from ' + d(rental.from) + ' to ' + d(rental.to) + '. We\'ll confirm availability, delivery and collection in your quote.</p>' +
+      '<div class="field" style="margin-bottom:10px"><label for="r-pc">Delivery postcode</label><input class="input" id="r-pc" placeholder="e.g. AL10 9AB" style="text-transform:uppercase" value="' + B.esc(rental.postcode || "") + '"></div>' +
+      '<div class="field" style="margin-bottom:10px"><label for="r-email">Email</label><input class="input" id="r-email" type="email" autocomplete="email" value="' + B.esc(rental.email || "") + '"></div>' +
+      '<div data-r-err></div><button class="btn btn--block" data-request>Check availability &amp; get quote</button>' +
+      '<p class="small muted" style="margin-top:10px;text-align:center">No payment now — we confirm stock, then send a quote with a secure deposit link.</p>'
+      : '<div class="state" style="padding:20px 0"><div class="state__icon" style="width:64px;height:64px">' + I("box") + '</div><p>Add equipment to build your rental. Prices are per item, or per pack of 20 for tableware.</p></div>');
+  }
+  function paint() { paintGroups(); paintGrid(); paintSummary(); }
+  paint();
+
+  function dates() {
+    rental.from = $("#from").value || rental.from;
+    if (!$("#to").value || $("#to").value <= rental.from) { var t = new Date(rental.from); t.setDate(t.getDate() + 1); $("#to").value = iso(t); }
+    rental.to = $("#to").value; $("#to").min = rental.from;
+    // Clamp quantities to what's free on the new dates
+    D.equipment.forEach(function (e) { if (rental.items[e.id] > available(e)) rental.items[e.id] = available(e); });
+    save(); paint();
+  }
+  $("#from").addEventListener("change", dates); $("#to").addEventListener("change", dates);
+
+  document.addEventListener("click", function (e) {
+    var g = e.target.closest("[data-group]"); if (g) { group = g.dataset.group; paintGroups(); paintGrid(); return; }
+    var add = e.target.closest("[data-eq-add]");
+    if (add) { rental.items[add.dataset.eqAdd] = 1; save(); paintGrid(); paintSummary(); B.toast("Added to your rental."); return; }
+    var q = e.target.closest("[data-eq-q]");
+    if (q) { var id = q.dataset.id; rental.items[id] = Math.max(0, (rental.items[id] || 0) + Number(q.dataset.eqQ)); save(); paintGrid(); paintSummary(); return; }
+    if (e.target.closest("[data-request]")) {
+      var pc = B.normalisePostcode($("#r-pc").value), em = $("#r-email").value;
+      if (!pc || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { $("[data-r-err]").innerHTML = '<div class="notice notice--error" style="margin-bottom:10px">' + I("alert") + '<span>Please add a UK postcode and your email.</span></div>'; return; }
+      rental.postcode = pc; rental.email = em; save();
+      // PRODUCTION: POST /api/rentals → re-check availability in a transaction, create a pending reservation, email quote.
+      var ref = "RNT-" + (301 + B.store.get("rentals", []).length);
+      B.store.set("rentals", [Object.assign({ id: ref, createdAt: new Date().toISOString(), status: "Quote requested" }, rental)].concat(B.store.get("rentals", [])));
+      B.store.set("rental", { from: rental.from, to: rental.to, items: {} });
+      $("[data-rental]").innerHTML = '<div style="text-align:center"><svg class="success-check" viewBox="0 0 88 88" aria-hidden="true"><circle class="fill" cx="44" cy="44" r="40"/><circle cx="44" cy="44" r="40"/><path d="M28 45l11 11 21-23"/></svg>' +
+        '<h3>Request sent</h3><p class="small" style="margin:8px 0 16px">Reference <strong>' + ref + '</strong>. We\'ve held your items for 48 hours and will email a quote to ' + B.esc(em) + ' shortly.</p><a class="btn btn--ghost btn--block" href="catering.html">Need food too? Book catering</a></div>';
+      rental = B.store.get("rental"); paintGrid();
+    }
+  });
+  if (location.hash) { var el = document.getElementById(location.hash.slice(1)); if (el) setTimeout(function () { el.scrollIntoView({ block: "center" }); el.style.boxShadow = "0 0 0 3px var(--red)"; }, 300); }
+});
+</script>
+</body>
+</html>

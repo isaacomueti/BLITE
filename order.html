@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your Order — B-Lite Food</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="orders" data-header="solid">
+<div class="header-spacer"></div>
+<main id="main" class="section" style="padding-top:40px">
+  <div class="container" data-root style="max-width:1000px"></div>
+</main>
+<script>
+Blite.ready(function () {
+  var B = Blite, $ = B.$, I = B.icon;
+  var o = B.order(B.params.get("id")), root = $("[data-root]");
+  if (!o) {
+    root.innerHTML = '<div class="state"><div class="state__icon">' + I("receipt") + '</div><h3>We couldn\'t find that order.</h3><p>Check the link in your confirmation email, or look in your account.</p><div class="state__actions"><a class="btn" href="account.html#orders">Your orders</a><a class="btn btn--ghost" href="contact.html">Contact support</a></div></div>';
+    return;
+  }
+  var t = function (d) { return new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }); };
+  var dateL = function (d) { return new Date(d).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }); };
+  var due = new Date(o.dueAt), windowEnd = new Date(due.getTime() + 20 * 60000);
+  var sameDay = new Date().toDateString() === due.toDateString();
+  var windowTxt = (sameDay ? "" : dateL(due) + ", ") + t(due) + "–" + t(windowEnd);
+
+  // Status is simulated from elapsed time here; production reads it from the orders table (updated by the kitchen in /admin).
+  var steps = o.type === "pickup"
+    ? [["Order received", "We've got it."], ["Payment confirmed", "Paid securely via Stripe."], ["Preparing your food", "Cooking fresh in our Hatfield kitchen."], ["Ready for collection", "Come on over — we'll text you."], ["Collected", "Enjoy!"]]
+    : [["Order received", "We've got it."], ["Payment confirmed", "Paid securely via Stripe."], ["Preparing your food", "Cooking fresh in our Hatfield kitchen."], ["Ready", "Packed and sealed."], ["Out for delivery", "On its way to you."], ["Delivered", "Enjoy!"]];
+  var mins = (Date.now() - new Date(o.placedAt)) / 60000;
+  var cur = o.when === "schedule" && !sameDay ? 2 : Math.min(steps.length - 1, 2 + Math.floor(mins / 15));
+  if (typeof o.stage === "number") cur = Math.min(o.stage, steps.length - 1); // set by the kitchen in admin
+  if (o.status === "cancelled") cur = -1;
+
+  var isNew = B.params.get("new") === "1";
+  root.innerHTML =
+    (isNew ? '<div style="text-align:center;margin-bottom:40px">' +
+      '<svg class="success-check" viewBox="0 0 88 88" aria-hidden="true"><circle class="fill" cx="44" cy="44" r="40"/><circle cx="44" cy="44" r="40"/><path d="M28 45l11 11 21-23"/></svg>' +
+      '<h1 class="h2">Order confirmed</h1><p class="lead" style="margin:10px auto 0">Thank you, ' + B.esc(o.customer.firstName) + '. We\'ve emailed your receipt to <strong>' + B.esc(o.customer.email) + '</strong>.</p></div>' : '') +
+    '<div class="two-col" style="grid-template-columns:minmax(0,1fr) 360px">' +
+      '<div class="panel">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:24px">' +
+          '<div><span class="eyebrow">Order #' + o.id + '</span><h2 class="h3" style="margin-top:8px">' + (o.type === "pickup" ? "Collection " : "Estimated delivery ") + '<span style="color:var(--red)">' + windowTxt + '</span></h2></div>' +
+          '<span class="pill pill--green">' + I("check", "i-sm") + ' Paid</span></div>' +
+        '<div class="timeline" aria-label="Order progress">' + steps.map(function (s, i) {
+          var cls = i < cur ? "is-done" : i === cur ? "is-current" : "";
+          if (i === cur && i === steps.length - 1) cls = "is-done";
+          return '<div class="tl-step ' + cls + '"><span class="tl-dot">' + (i < cur || cls === "is-done" ? I("check", "i-sm") : "") + '</span><div><h4>' + s[0] + '</h4><p>' + s[1] + '</p></div></div>';
+        }).join("") + '</div>' +
+        '<p class="small muted" style="margin-top:24px">' + I("info", "i-sm") + ' Live courier tracking will appear here once a delivery partner is connected.</p>' +
+      '</div>' +
+      '<aside class="summary">' +
+        '<h3>Summary</h3>' +
+        o.lines.map(function (l) { var p = B.product(l.id); return p ? '<div class="sum-row" style="font-size:14px"><span>' + l.qty + '× ' + B.esc(p.name) + '</span><span>' + B.money(B.unitPrice(l) * l.qty) + '</span></div>' : ""; }).join("") +
+        '<div class="sum-row" style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px"><span>Subtotal</span><span>' + B.money(o.subtotal) + '</span></div>' +
+        '<div class="sum-row"><span>' + (o.type === "pickup" ? "Pickup" : "Delivery") + '</span><span>' + (o.fee ? B.money(o.fee) : "Free") + '</span></div>' +
+        '<div class="sum-row sum-row--total"><span>Total paid</span><span>' + B.money(o.total) + '</span></div>' +
+        (o.address ? '<p class="small" style="margin-top:16px"><strong style="color:var(--dark)">Delivering to</strong><br>' + B.esc(o.address.line1) + (o.address.line2 ? ", " + B.esc(o.address.line2) : "") + '<br>' + B.esc(o.address.town) + ' ' + o.address.postcode + '</p>' : '') +
+        '<div style="display:grid;gap:8px;margin-top:18px"><a class="btn btn--ghost btn--block" href="menu.html">Order something else</a><a class="btn btn--ghost btn--block" href="contact.html">Need help?</a></div>' +
+      '</aside>' +
+    '</div>' +
+    (isNew && !B.user() ? '<div class="panel" style="margin-top:24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:var(--blush);border-color:transparent"><div style="flex:1;min-width:220px"><strong style="color:var(--dark)">Want to save your details for next time?</strong><p class="small">Create an account to track orders, save addresses and keep favourites.</p></div><a class="btn btn--secondary" href="account.html?register=1&email=' + encodeURIComponent(o.customer.email) + '">Create account</a></div>' : '');
+});
+</script>
+</body>
+</html>

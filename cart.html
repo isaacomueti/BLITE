@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your Basket — B-Lite Food</title>
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="cart" data-header="solid">
+<div class="header-spacer"></div>
+<main id="main" class="section" style="padding-top:36px">
+  <div class="container">
+    <h1 class="h2">Your Basket</h1>
+    <p class="muted" data-count style="margin:6px 0 28px"></p>
+    <div data-cart></div>
+  </div>
+</main>
+<script>
+Blite.ready(function () {
+  var B = Blite, $ = B.$, I = B.icon;
+  function paint() {
+    var c = B.cart(), n = B.cartCount(), root = $("[data-cart]");
+    $("[data-count]").textContent = n ? n + (n === 1 ? " item" : " items") : "";
+    if (!c.length) { root.innerHTML = B.emptyBasketHTML(); return; }
+    var sub = B.cartSubtotal(), est = 3.5;
+    var scheduled = B.cartHasScheduledOnly();
+    root.innerHTML = '<div class="two-col"><div>' +
+      (scheduled ? '<div class="notice notice--warn" style="margin-bottom:8px">' + I("clock") + '<span>Your basket includes dishes cooked to order — the earliest delivery is <strong>tomorrow</strong>. Quick meals on their own can arrive today.</span></div>' : "") +
+      c.map(B.lineItemHTML).join("") +
+      '<a class="text-link" href="menu.html" style="margin-top:20px">' + I("arrow-left", "i-sm") + ' Keep browsing</a></div>' +
+      '<aside class="summary sticky"><h3>Summary</h3>' +
+        '<div class="sum-row"><span>Subtotal</span><span>' + B.money(sub) + '</span></div>' +
+        '<div class="sum-row"><span>Delivery <span class="small muted">(from)</span></span><span>' + B.money(est) + '</span></div>' +
+        '<div class="sum-row sum-row--total"><span>Estimated total</span><span>' + B.money(sub + est) + '</span></div>' +
+        '<p class="small muted" style="margin:10px 0 16px">Exact delivery fee confirmed from your postcode. Pickup from Hatfield is free.</p>' +
+        '<a class="btn btn--block" href="checkout.html">Continue to checkout ' + I("arrow") + '</a>' +
+        '<div class="secure-note">' + I("shield", "i-sm") + ' Secure payment by Stripe</div>' +
+        '<div class="pay-logos"><span>VISA</span><span>Mastercard</span><span>AMEX</span><span> Pay</span><span>G Pay</span><span>PayPal</span></div>' +
+      '</aside></div>';
+  }
+  paint();
+  document.addEventListener("blite:cart", paint);
+});
+</script>
+</body>
+</html>

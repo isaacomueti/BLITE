@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Events — B-Lite Food</title>
+  <meta name="description" content="Weddings, birthdays, corporate events and private parties catered by B-Lite Food.">
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <style>
+    .ev-grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 240px; gap: 16px; }
+    .ev-grid .g-item { grid-column: span 4; }
+    .ev-grid .g-item:nth-child(6n + 1) { grid-column: span 7; grid-row: span 2; }
+    .ev-grid .g-item:nth-child(6n + 2), .ev-grid .g-item:nth-child(6n + 3) { grid-column: span 5; }
+    .ev-grid .g-item .g-item__overlay { opacity: 1; background: linear-gradient(180deg, transparent 45%, rgba(15,10,8,.8)); }
+    .ev-grid .g-item .tag { position: absolute; top: 14px; left: 14px; }
+    @media (max-width: 900px) { .ev-grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 200px; } .ev-grid .g-item, .ev-grid .g-item:nth-child(n) { grid-column: span 1; grid-row: span 1; } .ev-grid .g-item:nth-child(3n + 1) { grid-column: span 2; } }
+  </style>
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="events" data-header="dark">
+<main id="main">
+  <section class="page-hero page-hero--dark" style="padding-bottom:64px">
+    <div class="container">
+      <span class="eyebrow" style="color:#ff8a98">Events</span>
+      <h1 class="h1">Good food. <em>Great occasions.</em></h1>
+      <p class="lead">Birthdays, weddings, parties and corporate events — freshly prepared Nigerian food, beautifully served.</p>
+    </div>
+  </section>
+  <section class="section" style="padding-top:40px">
+    <div class="container" data-events></div>
+    <div class="container">
+      <div class="ev-grid" data-grid hidden></div>
+      <div class="newsletter" style="margin-top:72px" data-reveal>
+        <div><h2 class="h2">Planning something?</h2><p>Tell us the date and guest count — we'll handle the food, the equipment and the service.</p></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1"><a class="btn btn--white" href="catering.html#plan">Plan your event</a><a class="btn btn--dark" href="equipment.html">Hire equipment</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Event photo">
+  <button class="icon-btn lb-close" data-lb="close" aria-label="Close" data-icon="close"></button>
+  <button class="icon-btn lb-prev" data-lb="prev" aria-label="Previous photo" data-icon="chev-left"></button>
+  <div class="lightbox__stage"></div>
+  <button class="icon-btn lb-next" data-lb="next" aria-label="Next photo" data-icon="chev-right"></button>
+  <p class="lightbox__cap"></p>
+</div>
+<script>
+Blite.ready(function () {
+  var B = Blite, D = BliteData, $ = B.$, I = B.icon;
+  // One block per real event, each with all of its photos (only real event photography is shown).
+  var list = [], idx = 0;
+  $("[data-events]").innerHTML = D.events.map(function (ev) {
+    var imgs = ev.images || [ev.img];
+    return '<article class="ev-block" style="margin-bottom:56px"><div class="sec-head" style="margin-bottom:20px"><div><span class="eyebrow">' + B.esc(ev.type) + '</span><h2 class="h2">' + B.esc(ev.title) + '</h2><p>' + B.esc(ev.label) + '</p></div></div>' +
+      '<div class="gallery gallery--n' + Math.min(imgs.length, 5) + '">' + imgs.slice(0, 5).map(function (src) {
+        var i = list.push({ src: src, id: ev.id, title: ev.title, label: ev.label }) - 1;
+        return '<button class="g-item" data-i="' + i + '" aria-label="View photo from ' + B.esc(ev.title) + '">' + B.img(src, { dish: "rice", seed: ev.id + i, mode: "photo", alt: ev.title + " — " + ev.label }) + '</button>';
+      }).join("") + '</div></article>';
+  }).join("");
+  var lb = $("#lightbox"), stage = $(".lightbox__stage", lb), cap = $(".lightbox__cap", lb);
+  function show(i) { idx = (i + list.length) % list.length; var ph = list[idx]; stage.innerHTML = B.img(ph.src, { dish: "rice", seed: ph.id + idx, mode: "photo", alt: ph.title, eager: true }); cap.textContent = ph.title + " · " + ph.label; }
+  $("[data-events]").addEventListener("click", function (e) { var g = e.target.closest("[data-i]"); if (!g) return; show(+g.dataset.i); lb.classList.add("is-open"); $(".lb-close", lb).focus(); });
+  $("[data-grid]").addEventListener("click", function (e) { var g = e.target.closest("[data-i]"); if (!g) return; show(+g.dataset.i); lb.classList.add("is-open"); $(".lb-close", lb).focus(); });
+  lb.addEventListener("click", function (e) { var a = e.target.closest("[data-lb]"); if (e.target === lb || (a && a.dataset.lb === "close")) lb.classList.remove("is-open"); else if (a) show(idx + (a.dataset.lb === "next" ? 1 : -1)); });
+  document.addEventListener("keydown", function (e) { if (!lb.classList.contains("is-open")) return; if (e.key === "Escape") lb.classList.remove("is-open"); if (e.key === "ArrowRight") show(idx + 1); if (e.key === "ArrowLeft") show(idx - 1); });
+});
+</script>
+</body>
+</html>

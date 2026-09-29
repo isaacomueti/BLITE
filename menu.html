@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Menu — B-Lite Food</title>
+  <meta name="description" content="Order authentic Nigerian food online: jollof and fried rice, egusi, bitterleaf, ogbono and okra soups, peppersoup, pounded yam, amala, goat meat, fish, moi moi and small chops. Delivered from Hatfield, Hertfordshire.">
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="menu">
+<main id="main">
+  <section class="page-hero" style="padding-bottom:32px">
+    <div class="container">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span>/</span><span>Menu</span></nav>
+      <h1 class="h1">Our <em>Menu</em></h1>
+      <p class="lead">Quick meals can be delivered the same day. Everything else is cooked fresh to order — order a day ahead. Deliveries 8am–6pm, Monday to Saturday.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:28px" id="categories">
+    <div class="container">
+      <div class="toolbar">
+        <label class="search-input"><span class="sr-only">Search meals</span><span data-icon="search"></span><input class="input" type="search" placeholder="Search meals…" data-q autocomplete="off"></label>
+        <button class="btn btn--ghost btn--sm mobile-only" data-open-sheet aria-haspopup="dialog"><span data-icon="filter"></span>Filter <span data-filter-count></span></button>
+        <button class="btn btn--ghost btn--sm mobile-only" data-open-sheet aria-haspopup="dialog"><span data-icon="sort"></span>Sort</button>
+        <div class="desktop-only" style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <label for="sort" class="small muted">Sort by</label>
+          <select class="select" id="sort" data-sort style="height:44px;width:auto">
+            <option value="rec">Recommended</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="az">A–Z</option>
+          </select>
+        </div>
+      </div>
+      <div class="chips chips--scroll desktop-only" role="toolbar" aria-label="Filter by category" data-chips style="margin-bottom:28px"></div>
+      <p class="small muted" data-result-count aria-live="polite" style="margin-bottom:16px"></p>
+      <div class="grid grid-4" data-grid></div>
+    </div>
+  </section>
+</main>
+
+<!-- Mobile filter/sort bottom sheet -->
+<div class="sheet" id="filter-sheet" role="dialog" aria-modal="true" aria-label="Filter and sort" aria-hidden="true">
+  <div class="sheet__grip"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 class="h3">Filter &amp; sort</h3><button class="icon-btn" data-close-layer aria-label="Close" data-icon="close"></button></div>
+  <p class="label" style="margin-bottom:10px">Category</p>
+  <div class="chips" data-chips-mobile style="margin-bottom:24px"></div>
+  <p class="label" style="margin-bottom:10px">Sort by</p>
+  <div style="display:grid;gap:8px" data-sort-mobile>
+    <label class="radio-card"><input type="radio" name="msort" value="rec" checked><span class="rc-main"><span class="rc-title">Recommended</span></span></label>
+    <label class="radio-card"><input type="radio" name="msort" value="price-asc"><span class="rc-main"><span class="rc-title">Price: low to high</span></span></label>
+    <label class="radio-card"><input type="radio" name="msort" value="price-desc"><span class="rc-main"><span class="rc-title">Price: high to low</span></span></label>
+    <label class="radio-card"><input type="radio" name="msort" value="az"><span class="rc-main"><span class="rc-title">A–Z</span></span></label>
+  </div>
+  <button class="btn btn--block" style="margin-top:20px" data-close-layer data-apply>Show results</button>
+</div>
+
+<script>
+Blite.ready(function () {
+  var B = Blite, D = BliteData, $ = B.$, $$ = B.$$;
+  var grid = $("[data-grid]");
+  // Skeletons first: in production the list streams from the API.
+  grid.innerHTML = B.skeletonCards(8);
+
+  var state = { cat: B.params.get("cat") || "all", q: B.params.get("q") || "", sort: "rec" };
+  if (state.cat !== "all" && !D.categories.some(function (c) { return c.id === state.cat; })) state.cat = "all";
+  $("[data-q]").value = state.q;
+
+  var cats = [{ id: "all", name: "All" }].concat(D.categories);
+  function chipsHTML() {
+    return cats.map(function (c) {
+      var n = c.id === "all" ? D.products.length : D.products.filter(function (p) { return p.cat === c.id; }).length;
+      return '<button class="chip" data-cat="' + c.id + '" aria-pressed="' + (state.cat === c.id) + '">' + c.name + ' <span class="count">' + n + '</span></button>';
+    }).join("");
+  }
+  function results() {
+    var q = state.q.trim().toLowerCase();
+    var list = D.products.filter(function (p) {
+      return (state.cat === "all" || p.cat === state.cat) && (!q || (p.name + " " + p.desc).toLowerCase().indexOf(q) > -1);
+    });
+    var s = { "price-asc": function (a, b) { return a.price - b.price; }, "price-desc": function (a, b) { return b.price - a.price; }, az: function (a, b) { return a.name.localeCompare(b.name); } }[state.sort];
+    return s ? list.slice().sort(s) : list.slice().sort(function (a, b) { return (b.quick - a.quick) || (b.featured - a.featured); });
+  }
+  function paint() {
+    $("[data-chips]").innerHTML = chipsHTML();
+    $("[data-chips-mobile]").innerHTML = chipsHTML();
+    $("[data-filter-count]").textContent = state.cat === "all" ? "" : "(1)";
+    var list = results();
+    $("[data-result-count]").textContent = list.length + (list.length === 1 ? " dish" : " dishes") + (state.cat !== "all" ? " in " + cats.find(function (c) { return c.id === state.cat; }).name : "") + (state.q ? " matching “" + state.q + "”" : "");
+    grid.innerHTML = list.length ? list.map(function (p) { return B.productCard(p); }).join("")
+      : '<div style="grid-column:1/-1"><div class="state"><div class="state__icon">' + B.icon("search") + '</div><h3>Nothing delicious here yet.</h3><p>Try another search, or browse everything we cook.</p><div class="state__actions"><button class="btn btn--secondary" data-reset>Clear filters</button></div></div></div>';
+    grid.removeAttribute("data-stagger");
+    // Filters update without a reload; the URL stays shareable.
+    var u = new URL(location.href);
+    state.cat === "all" ? u.searchParams.delete("cat") : u.searchParams.set("cat", state.cat);
+    state.q ? u.searchParams.set("q", state.q) : u.searchParams.delete("q");
+    history.replaceState(null, "", u);
+  }
+  setTimeout(paint, 180);
+
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest("[data-cat]");
+    if (c) { state.cat = c.dataset.cat; paint(); return; }
+    if (e.target.closest("[data-reset]")) { state = { cat: "all", q: "", sort: state.sort }; $("[data-q]").value = ""; paint(); return; }
+    if (e.target.closest("[data-open-sheet]")) B.openLayer($("#filter-sheet"));
+  });
+  var t;
+  $("[data-q]").addEventListener("input", function (e) { clearTimeout(t); t = setTimeout(function () { state.q = e.target.value; paint(); }, 120); });
+  $("[data-sort]").addEventListener("change", function (e) { state.sort = e.target.value; paint(); });
+  $("[data-sort-mobile]").addEventListener("change", function (e) { state.sort = e.target.value; $("[data-sort]").value = state.sort; paint(); });
+});
+</script>
+</body>
+</html>

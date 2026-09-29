@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Checkout — B-Lite Food</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#F5223A">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<body data-page="checkout" data-header="solid">
+<div class="header-spacer"></div>
+<main id="main" class="section" style="padding-top:36px">
+  <div class="container" data-root>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="cart.html">Basket</a><span>/</span><span>Checkout</span></nav>
+    <h1 class="h2" style="margin:8px 0 28px">Checkout</h1>
+    <form class="two-col" novalidate data-form>
+      <div>
+        <!-- Guest checkout by default; sign-in is optional -->
+        <div class="notice notice--info" style="margin-bottom:20px" data-guest-note></div>
+
+        <section class="panel" aria-labelledby="h-type">
+          <div class="panel__head"><span class="num">1</span><h2 id="h-type">How would you like it?</h2></div>
+          <div class="segmented" role="group" aria-label="Order type"><button type="button" data-type="delivery" aria-pressed="true">Delivery</button><button type="button" data-type="pickup" aria-pressed="false">Pickup</button></div>
+          <div data-delivery style="margin-top:20px">
+            <p class="label" style="margin-bottom:8px">Where should we deliver?</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div class="field" style="flex:1;min-width:180px"><label for="pc" class="sr-only">Postcode</label><input class="input" id="pc" name="postcode" placeholder="e.g. AL10 9AB" autocomplete="postal-code" style="text-transform:uppercase"></div>
+              <button class="btn btn--dark" type="button" data-check>Check availability</button>
+            </div>
+            <div data-pc-result style="margin-top:12px" aria-live="polite"></div>
+          </div>
+          <div data-pickup hidden style="margin-top:20px" class="notice notice--info"><span data-icon="pin"></span><span><strong>Collect from B-Lite Kitchen</strong><br>62 Featherdell, Hatfield, Hertfordshire. We'll text you when it's ready.</span></div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-when">
+          <div class="panel__head"><span class="num">2</span><h2 id="h-when">When?</h2></div>
+          <div class="segmented" role="group" aria-label="Timing"><button type="button" data-when="asap" aria-pressed="true">ASAP</button><button type="button" data-when="schedule" aria-pressed="false">Schedule</button></div>
+          <div data-asap-note class="small muted" style="margin-top:12px"></div>
+          <div data-schedule hidden style="margin-top:18px">
+            <div class="chips" data-days style="margin-bottom:14px"></div>
+            <div class="slots" data-slots></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-you">
+          <div class="panel__head"><span class="num">3</span><h2 id="h-you">Your details</h2></div>
+          <div class="form-grid">
+            <div class="field"><label for="fn">First name</label><input class="input" id="fn" name="firstName" autocomplete="given-name" required><span class="error">Please enter your first name.</span></div>
+            <div class="field"><label for="ln">Last name</label><input class="input" id="ln" name="lastName" autocomplete="family-name" required><span class="error">Please enter your last name.</span></div>
+            <div class="field"><label for="em">Email</label><input class="input" id="em" name="email" type="email" autocomplete="email" required><span class="hint">For your receipt and order updates.</span><span class="error">Please enter a valid email address.</span></div>
+            <div class="field"><label for="ph">Mobile number</label><input class="input" id="ph" name="phone" type="tel" autocomplete="tel" placeholder="07123 456789" required><span class="error">Please enter a UK phone number.</span></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h-addr" data-address>
+          <div class="panel__head"><span class="num">4</span><h2 id="h-addr">Delivery address</h2></div>
+          <div class="form-grid">
+            <div class="field span-2"><label for="a1">Address line 1</label><input class="input" id="a1" name="line1" autocomplete="address-line1" required><span class="error">Please enter your address.</span></div>
+            <div class="field span-2"><label for="a2">Address line 2 <span class="muted">(optional)</span></label><input class="input" id="a2" name="line2" autocomplete="address-line2"></div>
+            <div class="field"><label for="town">Town / city</label><input class="input" id="town" name="town" autocomplete="address-level2" required><span class="error">Please enter your town or city.</span></div>
+            <div class="field"><label for="pc2">Postcode</label><input class="input" id="pc2" name="postcode2" autocomplete="postal-code" readonly style="background:#faf7f5"></div>
+            <div class="field span-2"><label for="notes">Delivery instructions <span class="muted">(optional)</span></label><textarea class="textarea" id="notes" name="notes" placeholder="Flat number, gate code, where to leave it…" style="min-height:84px"></textarea></div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="summary sticky" aria-label="Order summary">
+        <h3>Your order</h3>
+        <div data-lines style="margin-bottom:12px"></div>
+        <div class="sum-row"><span>Subtotal</span><span data-sub></span></div>
+        <div class="sum-row"><span>Delivery</span><span data-fee>—</span></div>
+        <div class="sum-row sum-row--total"><span>Total</span><span data-total></span></div>
+        <div data-error style="margin-top:14px"></div>
+        <button class="btn btn--block" type="submit" style="margin-top:16px;height:56px" data-pay>Pay securely <span data-pay-total></span></button>
+        <div class="secure-note"><span data-icon="shield"></span> You'll pay on Stripe's secure page</div>
+        <div class="pay-logos"><span>VISA</span><span>Mastercard</span><span>AMEX</span><span> Pay</span><span>G Pay</span><span>PayPal</span><span>Klarna</span></div>
+        <p class="small muted" style="margin-top:14px;text-align:center">By placing your order you agree to our <a href="legal.html?page=terms" style="text-decoration:underline">terms</a> and <a href="legal.html?page=refunds" style="text-decoration:underline">refund policy</a>.</p>
+      </aside>
+    </form>
+  </div>
+</main>
+
+<script>
+Blite.ready(function () {
+  var B = Blite, D = BliteData, $ = B.$, $$ = B.$$, I = B.icon;
+  var cart = B.cart();
+  if (!cart.length) { $("[data-root]").innerHTML = B.emptyBasketHTML(); return; }
+
+  var st = { type: "delivery", when: "asap", day: null, slot: null, delivery: null };
+  var user = B.user();
+  $("[data-guest-note]").innerHTML = user
+    ? I("user") + '<span>Signed in as <strong>' + B.esc(user.email) + '</strong>. Your details are filled in.</span>'
+    : I("user") + '<span>Checking out as a guest. <a href="account.html?next=checkout.html" style="text-decoration:underline;font-weight:600">Sign in</a> to use saved addresses — or carry on, no account needed.</span>';
+  if (user) { $("#fn").value = user.firstName || ""; $("#ln").value = user.lastName || ""; $("#em").value = user.email || ""; $("#ph").value = user.phone || ""; }
+
+  // Summary
+  $("[data-lines]").innerHTML = cart.map(function (l) {
+    var p = B.product(l.id);
+    return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:14px"><span><strong style="color:var(--dark)">' + l.qty + '×</strong> ' + B.esc(p.name) + '<br><span class="small muted">' + B.esc(B.lineLabel(l)) + '</span></span><span>' + B.money(B.unitPrice(l) * l.qty) + '</span></div>';
+  }).join("");
+  function fee() { return st.type === "pickup" ? 0 : st.delivery && st.delivery.ok ? st.delivery.fee : null; }
+  function paintTotals() {
+    var sub = B.cartSubtotal(), f = fee();
+    $("[data-sub]").textContent = B.money(sub);
+    $("[data-fee]").textContent = f == null ? "Enter postcode" : f === 0 ? "Free" : B.money(f);
+    $("[data-total]").textContent = B.money(sub + (f || 0));
+    $("[data-pay-total]").textContent = "— " + B.money(sub + (f || 0));
+  }
+  paintTotals();
+
+  // Order type
+  $$("[data-type]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      st.type = b.dataset.type;
+      $$("[data-type]").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      $("[data-delivery]").hidden = st.type !== "delivery";
+      $("[data-pickup]").hidden = st.type !== "pickup";
+      $("[data-address]").hidden = st.type !== "delivery";
+      paintTotals(); paintWhen();
+    });
+  });
+
+  // Postcode-first delivery check
+  function check() {
+    var r = B.checkDelivery($("#pc").value), out = $("[data-pc-result]");
+    st.delivery = r;
+    if (!r.ok && r.reason === "invalid") out.innerHTML = '<div class="notice notice--error">' + I("alert") + '<span>That doesn\'t look like a UK postcode. Try something like <strong>AL10 9AB</strong>.</span></div>';
+    else if (!r.ok) out.innerHTML = '<div class="notice notice--warn">' + I("info") + '<span><strong>We don\'t deliver to ' + r.postcode + ' yet.</strong> You can choose pickup from Hatfield, or <a href="contact.html" style="text-decoration:underline">ask us</a> about a one-off delivery.</span></div>';
+    else {
+      $("#pc").value = r.postcode; $("#pc2").value = r.postcode;
+      out.innerHTML = '<div class="notice">' + I("check") + '<span><strong>Delivery available to ' + r.postcode + '</strong><br>Estimated delivery: ' + r.eta + ' · Delivery fee: ' + B.money(r.fee) + '</span></div>';
+    }
+    paintTotals(); paintWhen();
+  }
+  $("[data-check]").addEventListener("click", check);
+  $("#pc").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); check(); } });
+  var saved = B.store.get("postcode", "");
+  if (saved) { $("#pc").value = saved; check(); }
+
+  // Scheduling — ordering hours 07:00–19:00; dishes cooked to order are next-day
+  var hrs = D.business.orderHours, now = new Date();
+  var needsTomorrow = B.cartHasScheduledOnly();
+  var openNow = now.getHours() >= hrs.open && now.getHours() < hrs.close;
+  // Deliveries run 8am–6pm, Monday to Saturday (live delivery policy) — no Sunday slots.
+  function days() {
+    var out = [], i = needsTomorrow || !openNow ? 1 : 0;
+    while (out.length < 4) { var d = new Date(); d.setDate(d.getDate() + i++); if (d.getDay() !== 0) out.push(d); }
+    return out;
+  }
+  function label(d) { var t = new Date(); var diff = Math.round((new Date(d.toDateString()) - new Date(t.toDateString())) / 864e5); return diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); }
+  function paintWhen() {
+    var asapBtn = $('[data-when="asap"]');
+    var canAsap = !needsTomorrow && openNow && now.getDay() !== 0 && now.getHours() < 17;
+    asapBtn.disabled = !canAsap;
+    if (!canAsap && st.when === "asap") setWhen("schedule");
+    $("[data-asap-note]").textContent = !canAsap
+      ? (needsTomorrow ? "Most dishes are cooked fresh to order, so please choose a delivery day from tomorrow." : "Same-day delivery isn't available right now (deliveries run 8am–6pm, Monday to Saturday). Choose a slot below.")
+      : st.when === "asap" ? (st.type === "pickup" ? "Ready for collection in about 30 minutes." : st.delivery && st.delivery.ok ? "Estimated delivery: " + st.delivery.eta + "." : "Check your postcode to see delivery times.") : "";
+    var ds = days();
+    if (!st.day) st.day = ds[0].toDateString();
+    $("[data-days]").innerHTML = ds.map(function (d) { return '<button type="button" class="chip" data-day="' + d.toDateString() + '" aria-pressed="' + (st.day === d.toDateString()) + '">' + label(d) + '</button>'; }).join("");
+    var isToday = st.day === new Date().toDateString(), slots = [];
+    for (var h = 8; h <= 18; h++) for (var m = 0; m < 60; m += 30) if (!(h === 18 && m > 0)) slots.push([h, m]);
+    $("[data-slots]").innerHTML = slots.map(function (s) {
+      var t = String(s[0]).padStart(2, "0") + ":" + String(s[1]).padStart(2, "0");
+      var past = isToday && (s[0] * 60 + s[1]) < now.getHours() * 60 + now.getMinutes() + 60;
+      return '<button type="button" class="slot" data-slot="' + t + '" aria-pressed="' + (st.slot === t) + '"' + (past ? " disabled" : "") + '>' + t + '</button>';
+    }).join("");
+  }
+  function setWhen(w) {
+    st.when = w;
+    $$("[data-when]").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.when === w); });
+    $("[data-schedule]").hidden = w !== "schedule";
+  }
+  $$("[data-when]").forEach(function (b) { b.addEventListener("click", function () { setWhen(b.dataset.when); paintWhen(); }); });
+  document.addEventListener("click", function (e) {
+    var d = e.target.closest("[data-day]"); if (d) { st.day = d.dataset.day; st.slot = null; paintWhen(); }
+    var s = e.target.closest("[data-slot]"); if (s) { st.slot = s.dataset.slot; paintWhen(); }
+  });
+  paintWhen();
+
+  // Validation
+  function validate() {
+    var ok = true, first = null;
+    function flag(input, bad) { var f = input.closest(".field"); f.classList.toggle("has-error", bad); input.setAttribute("aria-invalid", bad); if (bad) { ok = false; first = first || input; } }
+    ["#fn", "#ln"].forEach(function (s) { flag($(s), !$(s).value.trim()); });
+    flag($("#em"), !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($("#em").value));
+    flag($("#ph"), !/^(44|0)\d{9,10}$/.test($("#ph").value.replace(/[^\d]/g, "")));
+    if (st.type === "delivery") {
+      flag($("#a1"), !$("#a1").value.trim()); flag($("#town"), !$("#town").value.trim());
+      if (!st.delivery || !st.delivery.ok) { ok = false; first = first || $("#pc"); $("[data-pc-result]").innerHTML = '<div class="notice notice--error">' + I("alert") + '<span>Check your postcode so we can confirm delivery.</span></div>'; }
+    }
+    if (st.when === "schedule" && !st.slot) { ok = false; first = first || $("[data-slots]"); $("[data-asap-note]").textContent = "Please choose a time slot."; }
+    if (first) { first.scrollIntoView({ behavior: B.reduceMotion ? "auto" : "smooth", block: "center" }); if (first.focus) first.focus({ preventScroll: true }); }
+    return ok;
+  }
+
+  /* Payment hand-off.
+   * PRODUCTION: POST the basket to /api/checkout → server re-prices every line from the database,
+   * creates a Stripe Checkout Session (automatic payment methods) and returns session.url.
+   * The order is only marked PAID by the checkout.session.completed webhook — never by this page. */
+  $("[data-form]").addEventListener("submit", function (e) {
+    e.preventDefault();
+    $("[data-error]").innerHTML = "";
+    if (!validate()) return;
+    var btn = $("[data-pay]");
+    btn.classList.add("is-loading");
+    B.store.set("postcode", st.delivery && st.delivery.postcode || "");
+    setTimeout(function () {
+      if (B.params.get("demo") === "fail") {
+        btn.classList.remove("is-loading");
+        $("[data-error]").innerHTML = '<div class="notice notice--error" role="alert">' + I("alert") + '<span><strong>Something went wrong.</strong> We couldn\'t complete your order. Your payment has not been charged. <br><button type="submit" style="text-decoration:underline;font-weight:600;margin-top:4px">Try again</button> · <a href="contact.html" style="text-decoration:underline;font-weight:600">Contact support</a></span></div>';
+        return;
+      }
+      var id = B.nextOrderId(), f = fee() || 0, placed = new Date();
+      var due = st.when === "asap" ? new Date(placed.getTime() + (st.type === "pickup" ? 30 : 45) * 60000) : new Date(st.day + " " + st.slot);
+      B.saveOrder({
+        id: id, placedAt: placed.toISOString(), dueAt: due.toISOString(), type: st.type, when: st.when,
+        lines: B.cart(), subtotal: B.cartSubtotal(), fee: f, total: B.cartSubtotal() + f,
+        customer: { firstName: $("#fn").value.trim(), lastName: $("#ln").value.trim(), email: $("#em").value.trim(), phone: $("#ph").value.trim() },
+        address: st.type === "delivery" ? { line1: $("#a1").value, line2: $("#a2").value, town: $("#town").value, postcode: st.delivery.postcode, notes: $("#notes").value } : null,
+        status: "paid",
+      });
+      B.clearCart();
+      location.href = "order.html?id=" + id + "&new=1";
+    }, 900);
+  });
+});
+</script>
+</body>
+</html>

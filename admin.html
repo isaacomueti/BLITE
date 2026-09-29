@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — B-Lite Food</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="assets/img/brand/favicon-32.png" sizes="32x32">
+  <link rel="icon" href="assets/img/brand/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="assets/img/brand/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/blite.css?v=12">
+  <script src="assets/js/data.js?v=12"></script><script src="assets/js/art.js?v=12"></script><script src="assets/js/app.js?v=12"></script>
+</head>
+<!-- Prototype of /admin. In production this sits behind Supabase Auth with a staff role and row-level security. -->
+<body data-chrome="none">
+<div class="admin">
+  <aside class="admin-side">
+    <a href="index.html" class="logo logo--light"><img class="logo__img" src="assets/img/brand/logo-dark.webp" alt="B-Lite" width="720" height="443"><span class="logo__tag">Kitchen admin</span></a>
+    <nav data-nav aria-label="Admin"></nav>
+  </aside>
+  <main class="admin-main" id="main" data-main></main>
+</div>
+<script>
+Blite.ready(function () {
+  var B = Blite, D = BliteData, $ = B.$, $$ = B.$$, I = B.icon, esc = B.esc;
+  var views = [["dashboard", "grid", "Dashboard"], ["orders", "receipt", "Orders"], ["menu", "chef", "Menu"], ["catering", "calendar", "Catering"], ["equipment", "box", "Equipment"], ["customers", "users", "Customers"], ["payments", "card", "Payments"], ["settings", "settings", "Settings"]];
+  var STAGES = ["New", "Paid", "Preparing", "Ready", "Out for delivery", "Completed", "Cancelled"];
+  var PIPE = ["New enquiry", "Contacted", "Quote sent", "Awaiting payment", "Deposit paid", "Confirmed", "Completed"];
+
+  // Sample rows so the prototype isn't empty. Real orders placed through checkout appear alongside them.
+  var sampleOrders = [
+    { id: "BL-1047", sample: true, placedAt: new Date(Date.now() - 36e5).toISOString(), customer: { firstName: "Sample", lastName: "Customer" }, lines: [{ id: "pounded-yam", qty: 1 }, { id: "egusi-soup", qty: 1 }], total: 68.5, adminStatus: "Out for delivery" },
+    { id: "BL-1046", sample: true, placedAt: new Date(Date.now() - 72e5).toISOString(), customer: { firstName: "Sample", lastName: "Customer" }, lines: [{ id: "fried-rice-and-chicken", qty: 1 }], total: 18, adminStatus: "Completed" },
+    { id: "BL-1045", sample: true, placedAt: new Date(Date.now() - 9e6).toISOString(), customer: { firstName: "Sample", lastName: "Customer" }, lines: [{ id: "jollof-rice-meal", qty: 2 }], total: 27.5, adminStatus: "Preparing" },
+  ];
+  var sampleEnq = [
+    { id: "CAT-198", sample: true, type: "Wedding", guests: 220, date: "2026-11-14", name: "Sample client", status: "Quote sent", quote: 6800, deposit: 2040 },
+    { id: "CAT-199", sample: true, type: "Corporate", guests: 80, date: "2026-10-22", name: "Sample client", status: "Deposit paid", quote: 1900, deposit: 570 },
+    { id: "CAT-200", sample: true, type: "Birthday", guests: 45, date: "2026-10-10", name: "Sample client", status: "Contacted" },
+  ];
+  function orders() {
+    var real = B.orders().map(function (o) { return Object.assign({ adminStatus: o.adminStatus || "Paid" }, o); });
+    return real.concat(sampleOrders);
+  }
+  function enquiries() { return B.store.get("enquiries", []).concat(sampleEnq); }
+  function setOrderStatus(id, status) {
+    var all = B.orders(), o = all.find(function (x) { return x.id === id; });
+    if (!o) { var s = sampleOrders.find(function (x) { return x.id === id; }); if (s) s.adminStatus = status; return; }
+    o.adminStatus = status;
+    // Mirror to the customer's tracking timeline (Paid → 1, Preparing → 2, Ready → 3, Out → 4, Completed → 5)
+    o.stage = { New: 0, Paid: 1, Preparing: 2, Ready: 3, "Out for delivery": 4, Completed: 5 }[status];
+    if (status === "Cancelled") o.status = "cancelled";
+    B.store.set("orders", all);
+  }
+  var statusPill = function (s) { var c = { Completed: "pill--green", Cancelled: "pill--muted", Preparing: "pill--orange", "Out for delivery": "", Ready: "pill--green", Paid: "pill--dark", New: "pill--dark" }[s]; return '<span class="pill ' + (c == null ? "" : c) + '">' + s + '</span>'; };
+
+  var filter = "All";
+  var render = {
+    dashboard: function () {
+      var h = new Date().getHours(), greet = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+      var os = orders(), today = os.filter(function (o) { return new Date(o.placedAt).toDateString() === new Date().toDateString(); });
+      var sales = today.reduce(function (s, o) { return s + o.total; }, 0);
+      var enq = enquiries(), upcoming = enq.filter(function (e) { return ["Deposit paid", "Confirmed"].indexOf(e.status) > -1; });
+      return '<h1 class="h2" style="margin-bottom:6px">' + greet + ' 👋</h1><p class="muted" style="margin-bottom:24px">' + new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) + ' · rows marked <span class="pill pill--muted">sample</span> are demo data</p>' +
+        '<div class="grid grid-4" style="margin-bottom:28px"><div class="stat"><span>Today\'s sales</span><strong>' + B.money(sales) + '</strong></div><div class="stat"><span>Orders today</span><strong>' + today.length + '</strong></div><div class="stat"><span>Catering enquiries</span><strong>' + enq.filter(function (e) { return e.status === "New enquiry"; }).length + ' new</strong></div><div class="stat"><span>Upcoming events</span><strong>' + upcoming.length + '</strong></div></div>' +
+        '<div class="grid grid-2"><div><h2 class="h3" style="margin-bottom:12px">Live orders</h2>' + os.filter(function (o) { return ["Completed", "Cancelled"].indexOf(o.adminStatus) < 0; }).slice(0, 5).map(orderRow).join("") + '</div>' +
+        '<div><h2 class="h3" style="margin-bottom:12px">Catering pipeline</h2>' + PIPE.slice(0, 6).map(function (p) { var n = enq.filter(function (e) { return e.status === p; }).length; return '<div class="sum-row"><span>' + p + '</span><span>' + n + '</span></div>'; }).join("") + '</div></div>';
+    },
+    orders: function () {
+      var os = orders().filter(function (o) { return filter === "All" || o.adminStatus === filter; });
+      return '<h1 class="h2" style="margin-bottom:20px">Orders</h1><div class="chips" style="margin-bottom:20px">' + ["All"].concat(STAGES).map(function (s) { return '<button class="chip" data-filter="' + s + '" aria-pressed="' + (s === filter) + '">' + s + '</button>'; }).join("") + '</div>' +
+        (os.map(orderRow).join("") || '<div class="state"><h3>No orders here.</h3></div>');
+    },
+    menu: function () {
+      var hidden = B.store.get("admin.hidden", []);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap"><h1 class="h2">Menu</h1><button class="btn btn--sm" data-todo="Create product">' + I("plus", "i-sm") + ' New product</button></div>' +
+        '<div class="table-wrap"><table class="tbl"><thead><tr><th>Dish</th><th>Category</th><th>Price</th><th>Allergens</th><th>Featured</th><th>Available</th></tr></thead><tbody>' +
+        D.products.map(function (p) {
+          return '<tr><td style="display:flex;gap:12px;align-items:center;min-width:220px"><span style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0">' + B.productImg(p) + '</span><strong style="color:var(--dark)">' + esc(p.name) + '</strong>' + (p.confirm ? ' <span class="pill pill--orange" title="Price not yet confirmed">confirm</span>' : '') + '</td>' +
+            '<td>' + D.categories.find(function (c) { return c.id === p.cat; }).name + '</td><td>' + B.money(p.price) + '</td>' +
+            '<td class="small">' + (p.allergens.map(function (a) { return D.allergenNames[a]; }).join(", ") || "—") + '</td>' +
+            '<td>' + (p.featured || p.quick ? "★" : "") + '</td>' +
+            '<td><label class="switch"><input type="checkbox" data-avail="' + p.id + '" ' + (hidden.indexOf(p.id) < 0 ? "checked" : "") + ' aria-label="' + esc(p.name) + ' available"><span></span></label></td></tr>';
+        }).join("") + '</tbody></table></div>';
+    },
+    catering: function () {
+      var enq = enquiries();
+      return '<h1 class="h2" style="margin-bottom:20px">Catering pipeline</h1><div class="kanban">' + PIPE.map(function (p) {
+        var items = enq.filter(function (e) { return e.status === p; });
+        return '<div class="kanban__col"><h4><span>' + p + '</span><span class="muted">' + items.length + '</span></h4>' + items.map(function (e) {
+          return '<div class="k-card"><strong>' + esc(e.type) + ' · ' + e.guests + ' guests</strong><span class="muted">' + e.id + ' · ' + new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + '</span>' +
+            (e.quote ? '<div style="margin-top:6px">Quote ' + B.money(e.quote) + (e.deposit ? ' · Deposit ' + B.money(e.deposit) : '') + '</div>' : '') +
+            (e.diet && e.diet.length ? '<div class="small" style="margin-top:4px;color:#8a5300">Dietary: ' + esc(e.diet.join(", ")) + '</div>' : '') +
+            (e.sample ? ' <span class="pill pill--muted" style="margin-top:6px">sample</span>' : '') +
+            (PIPE.indexOf(p) < PIPE.length - 1 ? '<button class="text-link" style="margin-top:8px;font-size:12px" data-advance="' + e.id + '">Move to ' + PIPE[PIPE.indexOf(p) + 1] + ' →</button>' : '') + '</div>';
+        }).join("") + '</div>';
+      }).join("") + '</div><p class="small muted" style="margin-top:12px">"Quote sent" generates a Stripe Payment Link for the deposit; the webhook moves the card to "Deposit paid".</p>';
+    },
+    equipment: function () {
+      var maint = { "chafing-dishes": 2, "silver-chafing-dish": 1, "round-tables": 1 };
+      var reserved = { "chafing-dishes": 8, plates: 20, "charger-plates": 6, "event-chairs": 60 };
+      return '<h1 class="h2" style="margin-bottom:20px">Equipment inventory</h1><div class="table-wrap"><table class="tbl"><thead><tr><th>Item</th><th>Total</th><th>Reserved</th><th>Maintenance</th><th>Available to rent</th><th style="width:28%">Utilisation</th></tr></thead><tbody>' +
+        D.equipment.map(function (e) {
+          var r = reserved[e.id] || 0, m = maint[e.id] || 0, a = e.stock - r - m;
+          return '<tr><td><strong style="color:var(--dark)">' + e.name + '</strong></td><td>' + e.stock + '</td><td>' + r + '</td><td>' + m + '</td><td><strong>' + a + '</strong></td>' +
+            '<td><div class="bar-meter" title="Reserved / maintenance / free"><i style="width:' + (r / e.stock * 100) + '%;background:var(--red)"></i><i style="width:' + (m / e.stock * 100) + '%;background:var(--orange)"></i></div></td></tr>';
+        }).join("") + '</tbody></table></div><p class="small muted" style="margin-top:12px">Reservations are held per date range, so the same chafing dish can\'t be booked twice for overlapping events. Figures shown are sample data.</p>';
+    },
+    customers: function () { return placeholder("Customers", "Customer list with order history, lifetime value and saved dietary notes. Backed by the Supabase profiles table."); },
+    payments: function () { return placeholder("Payments", "Stripe payouts, refunds and disputes, read from the Stripe API. Refunds are issued here and reflected on the order automatically via webhook."); },
+    settings: function () { return placeholder("Settings", "Opening hours, delivery zones and fees, same-day cut-off, and notification emails."); },
+  };
+  function placeholder(t, d) { return '<h1 class="h2" style="margin-bottom:20px">' + t + '</h1><div class="panel"><p>' + d + '</p></div>'; }
+  function orderRow(o) {
+    var items = o.lines.map(function (l) { var p = B.product(l.id); return p ? l.qty + "× " + p.name : ""; }).join(", ");
+    return '<div class="row-card"><div class="grow"><strong>#' + o.id + '</strong> <span class="small muted">' + new Date(o.placedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) + ' · ' + esc(o.customer.firstName) + '</span>' + (o.sample ? ' <span class="pill pill--muted">sample</span>' : '') + '<div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(items) + '</div></div>' +
+      '<span class="price">' + B.money(o.total) + '</span>' + statusPill(o.adminStatus) +
+      '<select class="select" style="height:38px;width:auto;font-size:13px" data-status="' + o.id + '" aria-label="Update status for ' + o.id + '">' + STAGES.map(function (s) { return '<option' + (s === o.adminStatus ? " selected" : "") + '>' + s + '</option>'; }).join("") + '</select></div>';
+  }
+
+  function paint() {
+    var cur = (location.hash || "#dashboard").slice(1);
+    if (!render[cur]) cur = "dashboard";
+    $("[data-nav]").innerHTML = views.map(function (v) { return '<a href="#' + v[0] + '" aria-current="' + (v[0] === cur) + '">' + I(v[1]) + v[2] + '</a>'; }).join("") + '<a href="index.html">' + I("external") + 'View site</a>';
+    $("[data-main]").innerHTML = '<div class="admin-view is-active">' + render[cur]() + '</div>';
+  }
+  window.addEventListener("hashchange", paint);
+  document.addEventListener("change", function (e) {
+    var s = e.target.closest("[data-status]"); if (s) { setOrderStatus(s.dataset.status, s.value); paint(); B.toast("#" + s.dataset.status + " → " + s.value); }
+    var a = e.target.closest("[data-avail]");
+    if (a) { var h = B.store.get("admin.hidden", []).filter(function (x) { return x !== a.dataset.avail; }); if (!a.checked) h.push(a.dataset.avail); B.store.set("admin.hidden", h); B.toast(a.checked ? "Back on the menu." : "Marked as sold out."); }
+  });
+  document.addEventListener("click", function (e) {
+    var f = e.target.closest("[data-filter]"); if (f) { filter = f.dataset.filter; paint(); }
+    var adv = e.target.closest("[data-advance]");
+    if (adv) {
+      var id = adv.dataset.advance, list = B.store.get("enquiries", []), x = list.find(function (q) { return q.id === id; }) || sampleEnq.find(function (q) { return q.id === id; });
+      x.status = PIPE[PIPE.indexOf(x.status) + 1];
+      if (!x.sample) B.store.set("enquiries", list);
+      paint();
+    }
+    var t = e.target.closest("[data-todo]"); if (t) B.toast(t.dataset.todo + " opens the product editor (image upload, variations, allergens, stock).");
+  });
+  paint();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# local / generated
+.vercel
+node_modules/
+.DS_Store
+Thumbs.db
+tools/crawl/*.json
+tools/crawl/*.html
+tools/crawl/detail/
+tools/crawl/img/
