@@ -25,7 +25,7 @@ No build step and no dependencies. State (basket, orders, favourites, enquiries)
 | Equipment | `equipment.html` | Date-based rental basket (separate from food), availability per date range, quote request |
 | Events | `events.html` | Filterable editorial gallery + lightbox |
 | About / Contact | `about.html`, `contact.html` | Story, principles, kitchen, team; contact details, hours, form, map |
-| Account | `account.html` | Email sign-in, overview, orders, addresses, payment methods (Stripe-held), favourites, catering bookings, profile, settings |
+| Account | `account.html` | Email sign-in, overview, orders, addresses, payment methods (held by Revolut), favourites, catering bookings, profile, settings |
 | Legal & help | `legal.html?page=…` | Delivery, allergen matrix (generated from menu data), privacy, cookies, terms, refunds, catering & rental terms |
 | Admin | `admin.html` | Dashboard, order status (updates the customer's tracking page), menu availability, catering CRM pipeline, equipment inventory |
 
@@ -96,7 +96,7 @@ Still to confirm before launch:
 
 AI dish, equipment and event images replaced by real photos are not included in this repo.
 
-## From prototype to production (Next.js · Supabase · Stripe)
+## From prototype to production (Next.js · Supabase · Revolut Business)
 
 Each shared block in `assets/js/app.js` maps onto a component or route in the planned stack:
 
@@ -104,9 +104,9 @@ Each shared block in `assets/js/app.js` maps onto a component or route in the pl
 | --- | --- |
 | `BliteData` (`data.js`) | Supabase tables: `products`, `categories`, `equipment`, `equipment_reservations`, `events`, `orders`, `catering_bookings` |
 | `Blite.cart` (localStorage) | Same client-side basket (strictly necessary, so cookie-exempt), re-priced on the server |
-| Checkout "Pay securely" | `POST /api/checkout` → Stripe Checkout Session (automatic payment methods: cards, Apple Pay, Google Pay, PayPal, Klarna) → redirect |
-| `B.saveOrder` | **Only** the `checkout.session.completed` webhook creates or confirms a paid order. The browser is never trusted. |
-| Catering enquiry | `POST /api/catering` → CRM row → quote → Stripe Payment Link / Invoice for the deposit → webhook moves it to "Deposit paid" |
+| Checkout "Pay securely" | `POST /api/checkout` → Revolut Business Merchant API order → hosted checkout page (cards, Apple Pay, Google Pay, Revolut Pay) → redirect |
+| `B.saveOrder` | **Only** Revolut's `ORDER_COMPLETED` webhook creates or confirms a paid order. The browser is never trusted. |
+| Catering enquiry | `POST /api/catering` → CRM row → quote → Revolut payment link for the deposit → webhook moves it to "Deposit paid" |
 | Equipment request | Availability check in a transaction against `equipment_reservations` for the date range |
 | Account sign-in | Supabase Auth magic link (+ Google/Apple) |
 | Email | Resend (receipts, enquiry auto-replies) |

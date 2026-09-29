@@ -96,7 +96,7 @@ Blite.ready(function () {
             (e.sample ? ' <span class="pill pill--muted" style="margin-top:6px">sample</span>' : '') +
             (PIPE.indexOf(p) < PIPE.length - 1 ? '<button class="text-link" style="margin-top:8px;font-size:12px" data-advance="' + e.id + '">Move to ' + PIPE[PIPE.indexOf(p) + 1] + ' →</button>' : '') + '</div>';
         }).join("") + '</div>';
-      }).join("") + '</div><p class="small muted" style="margin-top:12px">"Quote sent" generates a Stripe Payment Link for the deposit; the webhook moves the card to "Deposit paid".</p>';
+      }).join("") + '</div><p class="small muted" style="margin-top:12px">"Quote sent" generates a Revolut payment link for the deposit; the webhook moves the card to "Deposit paid".</p>';
     },
     equipment: function () {
       var maint = { "chafing-dishes": 2, "silver-chafing-dish": 1, "round-tables": 1 };
@@ -109,7 +109,7 @@ Blite.ready(function () {
         }).join("") + '</tbody></table></div><p class="small muted" style="margin-top:12px">Reservations are held per date range, so the same chafing dish can\'t be booked twice for overlapping events. Figures shown are sample data.</p>';
     },
     customers: function () { return placeholder("Customers", "Customer list with order history, lifetime value and saved dietary notes. Backed by the Supabase profiles table."); },
-    payments: function () { return placeholder("Payments", "Stripe payouts, refunds and disputes, read from the Stripe API. Refunds are issued here and reflected on the order automatically via webhook."); },
+    payments: function () { return placeholder("Payments", "Revolut Business settlements, refunds and disputes, read from the Revolut Merchant API. Refunds are issued here and reflected on the order automatically via webhook."); },
     settings: function () { return placeholder("Settings", "Opening hours, delivery zones and fees, same-day cut-off, and notification emails."); },
   };
   function placeholder(t, d) { return '<h1 class="h2" style="margin-bottom:20px">' + t + '</h1><div class="panel"><p>' + d + '</p></div>'; }

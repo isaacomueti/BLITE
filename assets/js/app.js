@@ -241,7 +241,7 @@
     return { ok: true, postcode: norm, fee: zone.fee, eta: zone.eta };
   };
 
-  /* ---------- orders (prototype store; production: Stripe webhook creates these) ---------- */
+  /* ---------- orders (prototype store; production: the Revolut order-completed webhook creates these) ---------- */
   B.orders = () => store.get("orders", []);
   B.saveOrder = (o) => { const all = B.orders().filter((x) => x.id !== o.id); all.unshift(o); store.set("orders", all); };
   B.order = (id) => B.orders().find((o) => o.id === id);

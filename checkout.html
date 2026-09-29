@@ -79,7 +79,7 @@
         <div class="sum-row sum-row--total"><span>Total</span><span data-total></span></div>
         <div data-error style="margin-top:14px"></div>
         <button class="btn btn--block" type="submit" style="margin-top:16px;height:56px" data-pay>Pay securely <span data-pay-total></span></button>
-        <div class="secure-note"><span data-icon="shield"></span> You'll pay on Stripe's secure page</div>
+        <div class="secure-note"><span data-icon="shield"></span> You'll pay on Revolut's secure page</div>
         <div class="pay-logos"><span>VISA</span><span>Mastercard</span><span>AMEX</span><span> Pay</span><span>G Pay</span><span>PayPal</span><span>Klarna</span></div>
         <p class="small muted" style="margin-top:14px;text-align:center">By placing your order you agree to our <a href="legal.html?page=terms" style="text-decoration:underline">terms</a> and <a href="legal.html?page=refunds" style="text-decoration:underline">refund policy</a>.</p>
       </aside>
@@ -204,8 +204,8 @@ Blite.ready(function () {
 
   /* Payment hand-off.
    * PRODUCTION: POST the basket to /api/checkout → server re-prices every line from the database,
-   * creates a Stripe Checkout Session (automatic payment methods) and returns session.url.
-   * The order is only marked PAID by the checkout.session.completed webhook — never by this page. */
+   * creates a Revolut Business order (Merchant API) and returns its hosted checkout_url.
+   * The order is only marked PAID by Revolut's ORDER_COMPLETED webhook — never by this page. */
   $("[data-form]").addEventListener("submit", function (e) {
     e.preventDefault();
     $("[data-error]").innerHTML = "";

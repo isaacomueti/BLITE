@@ -35,8 +35,8 @@ Blite.ready(function () {
 
   // Status is simulated from elapsed time here; production reads it from the orders table (updated by the kitchen in /admin).
   var steps = o.type === "pickup"
-    ? [["Order received", "We've got it."], ["Payment confirmed", "Paid securely via Stripe."], ["Preparing your food", "Cooking fresh in our Hatfield kitchen."], ["Ready for collection", "Come on over — we'll text you."], ["Collected", "Enjoy!"]]
-    : [["Order received", "We've got it."], ["Payment confirmed", "Paid securely via Stripe."], ["Preparing your food", "Cooking fresh in our Hatfield kitchen."], ["Ready", "Packed and sealed."], ["Out for delivery", "On its way to you."], ["Delivered", "Enjoy!"]];
+    ? [["Order received", "We've got it."], ["Payment confirmed", "Paid securely via Revolut."], ["Preparing your food", "Cooking fresh in our Hatfield kitchen."], ["Ready for collection", "Come on over — we'll text you."], ["Collected", "Enjoy!"]]
+    : [["Order received", "We've got it."], ["Payment confirmed", "Paid securely via Revolut."], ["Preparing your food", "Cooking fresh in our Hatfield kitchen."], ["Ready", "Packed and sealed."], ["Out for delivery", "On its way to you."], ["Delivered", "Enjoy!"]];
   var mins = (Date.now() - new Date(o.placedAt)) / 60000;
   var cur = o.when === "schedule" && !sameDay ? 2 : Math.min(steps.length - 1, 2 + Math.floor(mins / 15));
   if (typeof o.stage === "number") cur = Math.min(o.stage, steps.length - 1); // set by the kitchen in admin

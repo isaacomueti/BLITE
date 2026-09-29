@@ -7,3 +7,7 @@ tools/crawl/*.json
 tools/crawl/*.html
 tools/crawl/detail/
 tools/crawl/img/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
