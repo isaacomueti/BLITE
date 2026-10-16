@@ -1,0 +1,3 @@
+# The website deploys as static files; keep the mobile app's source and tooling out of it.
+mobile/
+tools/

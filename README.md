@@ -11,6 +11,13 @@ python3 -m http.server 8080   # → http://localhost:8080
 No build step and no dependencies. State (basket, orders, favourites, enquiries) lives in
 `localStorage` so every flow can be clicked through end to end.
 
+## Mobile app
+
+A Glovo-style ordering app for iOS and Android (Expo / React Native) lives in [`mobile/`](mobile/README.md).
+It uses this website's menu, prices and photos: after changing `assets/js/data.js` or `assets/img/`,
+run `cd mobile && node scripts/import-catalogue.mjs` to refresh the app. `mobile/` is excluded from
+the Vercel deployment by `.vercelignore`.
+
 ## Pages
 
 | Page | File | What it demonstrates |
