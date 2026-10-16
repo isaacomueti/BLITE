@@ -1,105 +1,120 @@
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, Icon, IconButton, Photo, Stepper, Txt } from '@/components/ui';
-import { equipment, normalisePostcode } from '@/lib/data';
-import { C, F, money, R, shadow } from '@/lib/theme';
+import { BasketBar, Button, Icon, IconButton, Photo, Stepper, tap, Txt } from '@/components/ui';
+import { business, equipment, toApiDate } from '@/lib/data';
+import { useStore } from '@/lib/store';
+import { C, F, money, R } from '@/lib/theme';
 
-/** Rental request — kept separate from the food basket (inventory, not immediate consumption).
- *  Live prices are per hire; stock levels aren't published yet, so availability is confirmed with the quote. */
+/** Hire start dates: tomorrow onwards (the website allows up to 150 days ahead). */
+function startDays() {
+  const out: Date[] = [];
+  for (let i = 1; out.length < 21; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    out.push(d);
+  }
+  return out;
+}
+
+/** Equipment hire, booked into the same basket and order as food — as on the website. */
 export default function EquipmentHire() {
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<Record<string, number>>({});
-  const [days, setDays] = useState(1);
-  const [postcode, setPostcode] = useState('');
-  const [error, setError] = useState('');
-  const [sent, setSent] = useState<string | null>(null);
-  const chosen = equipment.filter((e) => items[e.id]);
-  const itemCount = chosen.reduce((n, e) => n + items[e.id], 0);
-  const total = chosen.reduce((s, e) => s + e.price * items[e.id], 0);
-  const set = (id: string, n: number) => setItems((x) => ({ ...x, [id]: Math.max(0, Math.min(n, 99)) }));
+  const { cart, hire, setQty } = useStore();
+  const [days] = useState(startDays);
+  const [start, setStart] = useState(toApiDate(days[0]));
+  const [length, setLength] = useState(1);
+  const maxDays = business.maxRentalDays || 4;
 
-  if (sent) {
-    return (
-      <View style={[s.done, { paddingTop: insets.top + 60 }]}>
-        <Animated.View entering={ZoomIn.springify().damping(12)} style={s.doneIcon}><Icon name="checkmark" size={40} color="#fff" /></Animated.View>
-        <Txt v="h1" style={{ textAlign: 'center' }}>Request sent</Txt>
-        <Txt style={{ textAlign: 'center', marginTop: 8 }}>Reference {sent}. We’ll confirm availability for your dates and email a quote shortly.</Txt>
-        <Button title="Need food too? Book catering" variant="secondary" style={{ alignSelf: 'stretch', marginTop: 28 }} onPress={() => router.replace('/catering')} />
-        <Button title="Back to home" style={{ alignSelf: 'stretch', marginTop: 10 }} onPress={() => router.replace('/')} />
-      </View>
-    );
-  }
+  const inCart = (id: string) => cart.find((l) => l.kind === 'equipment' && l.id === id);
+  const setItem = (id: string, qty: number) => {
+    const line = inCart(id);
+    if (qty <= 0) {
+      if (line) setQty(line.key, 0);
+      return;
+    }
+    hire(id, { start, days: length, qty });
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: chosen.length ? 230 : 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={[s.hero, { paddingTop: insets.top + 8 }]}>
-          <Photo k="hire/hero" style={StyleSheet.absoluteFill} />
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(25,25,25,0.45)' }]} />
+          <Photo k={equipment[0]?.photo} style={StyleSheet.absoluteFill} fallback="eq-chafing" />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(25,25,25,0.5)' }]} />
           <IconButton name="arrow-back" label="Back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <Txt v="eyebrow" color="#FFD3D9" style={{ marginTop: 56 }}>Equipment hire</Txt>
           <Txt v="hero" color="#fff" style={{ marginTop: 6, maxWidth: '80%' }}>Everything to serve the occasion.</Txt>
         </View>
 
-        <View style={s.daysRow}>
-          <Icon name="calendar-outline" size={20} color={C.red} />
-          <Txt v="label" style={{ flex: 1 }}>How long do you need it?</Txt>
-          <Stepper compact min={1} value={days} onChange={(n) => setDays(Math.max(1, Math.min(14, n)))} />
-          <Txt v="small" style={{ width: 40 }}>{days === 1 ? 'day' : 'days'}</Txt>
+        <View style={s.panel}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Icon name="calendar-outline" size={20} color={C.red} />
+            <Txt v="label" style={{ flex: 1 }}>Hire starts</Txt>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingTop: 10 }}>
+            {days.map((d) => {
+              const v = toApiDate(d);
+              return (
+                <Pressable key={v} onPress={() => { tap(); setStart(v); }} style={[s.chip, start === v && s.chipOn]}>
+                  <Text style={[s.chipText, start === v && { color: '#fff' }]}>{d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 }}>
+            <Icon name="time-outline" size={20} color={C.red} />
+            <Txt v="label" style={{ flex: 1 }}>How long?</Txt>
+            <Stepper compact min={1} value={length} onChange={(n) => setLength(Math.max(1, Math.min(maxDays, n)))} />
+            <Txt v="small" style={{ width: 40 }}>{length === 1 ? 'day' : 'days'}</Txt>
+          </View>
+          <Txt v="small" style={{ marginTop: 10 }}>Up to {maxDays} days. A refundable caution fee per booked item is added at checkout.</Txt>
         </View>
 
-        {equipment.map((e) => (
-          <View key={e.id} style={s.row}>
-            <Photo k={e.photo} style={s.img} alt={e.name} />
-            <View style={{ flex: 1 }}>
-              <Txt v="h3">{e.name}</Txt>
-              <Txt v="small" numberOfLines={2}>{e.desc}</Txt>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                <Txt v="price">{money(e.price)}<Txt v="small">{e.per ? ' per ' + e.per.replace('20 pieces', 'pack of 20') : ' each'}</Txt></Txt>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                <Txt v="small" style={{ fontFamily: F.semibold }}>{e.group}</Txt>
-                {items[e.id] ? <Stepper compact value={items[e.id]} onChange={(n) => set(e.id, n)} /> : <Button title="Add" size="sm" variant="secondary" icon="add" onPress={() => set(e.id, 1)} />}
+        {equipment.map((e) => {
+          const line = inCart(e.id);
+          return (
+            <View key={e.id} style={s.row}>
+              <Photo k={e.photo} style={s.img} alt={e.name} fallback="eq-chafing" />
+              <View style={{ flex: 1 }}>
+                <Txt v="h3">{e.name}</Txt>
+                {!!e.group && <Txt v="small">{e.group}</Txt>}
+                <Txt v="small" numberOfLines={2}>{e.desc}</Txt>
+                <Txt v="price" style={{ marginTop: 6 }}>{money(e.price)}<Txt v="small"> per day · caution {money(e.caution)} per booking</Txt></Txt>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 8 }}>
+                  {!e.bookable ? (
+                    <Button title="Chat to book" size="sm" variant="ghost" icon="chatbubbles-outline" onPress={() => WebBrowser.openBrowserAsync(business.chatUrl)} />
+                  ) : line ? (
+                    <Stepper compact value={line.qty} onChange={(n) => setItem(e.id, n)} />
+                  ) : (
+                    <Button title="Add" size="sm" variant="secondary" icon="add" onPress={() => setItem(e.id, 1)} />
+                  )}
+                </View>
+                {line && (line.start !== start || line.days !== length) && (
+                  <Txt v="small" color={C.red} style={{ marginTop: 4, textAlign: 'right' }} onPress={() => hire(e.id, { start, days: length, qty: line.qty })}>
+                    Booked for {line.days} {line.days === 1 ? 'day' : 'days'} from {line.start} · tap to use these dates
+                  </Txt>
+                )}
               </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
+        {equipment.length === 0 && <Txt style={{ textAlign: 'center', padding: 24 }}>No equipment is listed right now.</Txt>}
       </ScrollView>
-
-      {chosen.length > 0 && (
-        <Animated.View entering={FadeInDown} style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
-            <Txt v="label">{itemCount} {itemCount === 1 ? 'item' : 'items'} · {days} {days === 1 ? 'day' : 'days'}</Txt>
-            <Txt v="h3">Est. {money(total)}</Txt>
-          </View>
-          <TextInput value={postcode} onChangeText={(v) => { setPostcode(v.toUpperCase()); setError(''); }} placeholder="Delivery postcode" placeholderTextColor="#B5ADA8" autoCapitalize="characters" style={s.input} />
-          {!!error && <Txt v="small" color="#B0101F" style={{ marginTop: 6 }}>{error}</Txt>}
-          <Button
-            title="Check availability & get quote"
-            style={{ marginTop: 10 }}
-            onPress={() => {
-              if (!normalisePostcode(postcode)) return setError('Enter a valid UK postcode.');
-              // PRODUCTION: POST /api/rentals → availability check against reservations for the date range.
-              setSent('RNT-' + Math.floor(300 + Math.random() * 600));
-            }}
-          />
-        </Animated.View>
-      )}
+      <BasketBar />
     </View>
   );
 }
 
 const s = StyleSheet.create({
   hero: { backgroundColor: C.dark, paddingHorizontal: 16, paddingBottom: 26, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
-  daysRow: { flexDirection: 'row', alignItems: 'center', gap: 10, margin: 16, padding: 12, borderRadius: R.card, backgroundColor: '#fff', borderWidth: 1, borderColor: C.border },
+  panel: { margin: 16, padding: 14, borderRadius: R.card, backgroundColor: '#fff', borderWidth: 1, borderColor: C.border },
+  chip: { paddingHorizontal: 14, height: 38, borderRadius: 19, borderWidth: 1.5, borderColor: C.border, justifyContent: 'center', backgroundColor: '#fff' },
+  chipOn: { backgroundColor: C.red, borderColor: C.red },
+  chipText: { fontFamily: F.semibold, fontSize: 14, color: C.dark },
   row: { flexDirection: 'row', gap: 14, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   img: { width: 96, height: 96, borderRadius: R.img, backgroundColor: '#F4EFEB' },
-  sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, ...shadow.md },
-  input: { height: 50, borderRadius: R.input, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 14, fontFamily: F.semibold, fontSize: 15, color: C.dark },
-  done: { flex: 1, backgroundColor: C.bg, alignItems: 'center', paddingHorizontal: 28 },
-  doneIcon: { width: 84, height: 84, borderRadius: 42, backgroundColor: C.red, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
 });

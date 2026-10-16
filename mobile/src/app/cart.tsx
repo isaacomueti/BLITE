@@ -3,17 +3,18 @@ import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, Icon, IconButton, Photo, ProductTile, Stepper, SumRow, Txt } from '@/components/ui';
-import { productById, products } from '@/lib/data';
-import { lineLabel, unitPrice, useStore } from '@/lib/store';
+import { business, products } from '@/lib/data';
+import { lineLabel, lineName, linePhoto, unitPrice, useStore } from '@/lib/store';
 import { C, money, R } from '@/lib/theme';
 
 export default function Cart() {
   const insets = useSafeAreaInsets();
-  const { cart, setQty, subtotal, count, address, needsTomorrow } = useStore();
+  const { cart, setQty, subtotal, caution, count } = useStore();
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const inCart = new Set(cart.map((l) => l.id));
-  const upsell = products.filter((p) => ['sides', 'pastries', 'swallow'].includes(p.cat) && !inCart.has(p.id)).slice(0, 8);
-  const fee = address?.fee;
+  const upsell = products.filter((p) => p.featured && p.available && !inCart.has(p.id)).slice(0, 8);
+  // Lines whose dish or item has since come off the website are dropped from the basket.
+  const lines = cart.filter((l) => !!lineName(l));
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -21,36 +22,31 @@ export default function Cart() {
         <IconButton name="close" label="Close basket" onPress={close} />
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Txt v="h3">Your basket</Txt>
-          <Txt v="small">B-Lite Food · Hatfield</Txt>
+          <Txt v="small">B-Lite Food</Txt>
         </View>
         <View style={{ width: 42 }} />
       </View>
 
-      {!cart.length ? (
+      {!lines.length ? (
         <EmptyState icon="bag-handle-outline" title="Your basket is waiting." text="Looks like you haven't added anything delicious yet." action="Browse the menu" onAction={() => router.replace('/store')} />
       ) : (
         <>
-          <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
-            {needsTomorrow && (
-              <View style={s.notice}>
-                <Icon name="time" size={18} color="#8A5300" />
-                <Txt v="small" color="#8A5300" style={{ flex: 1 }}>Your basket includes dishes cooked to order, so the earliest delivery is tomorrow.</Txt>
-              </View>
-            )}
-            {cart.map((l) => {
-              const p = productById(l.id)!;
-              return (
-                <View key={l.key} style={s.line}>
-                  <Photo k={p.photo} style={s.lineImg} alt={p.name} />
-                  <View style={{ flex: 1 }}>
-                    <Txt v="label" numberOfLines={2}>{p.name}</Txt>
-                    {!!lineLabel(l) && <Txt v="small" numberOfLines={2}>{lineLabel(l)}</Txt>}
-                    <Txt v="price" style={{ marginTop: 4 }}>{money(unitPrice(l) * l.qty)}</Txt>
-                  </View>
-                  <Stepper compact value={l.qty} onChange={(n) => setQty(l.key, n)} />
+          <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
+            <View style={s.notice}>
+              <Icon name="time" size={18} color="#8A5300" />
+              <Txt v="small" color="#8A5300" style={{ flex: 1 }}>Everything is cooked fresh to order — you’ll choose a delivery or pickup time at least 24 hours ahead.</Txt>
+            </View>
+            {lines.map((l) => (
+              <View key={l.key} style={s.line}>
+                <Photo k={linePhoto(l)} style={s.lineImg} alt={lineName(l)} fallback={l.kind === 'equipment' ? 'eq-chafing' : 'rice'} />
+                <View style={{ flex: 1 }}>
+                  <Txt v="label" numberOfLines={2}>{lineName(l)}</Txt>
+                  {!!lineLabel(l) && <Txt v="small" numberOfLines={2}>{lineLabel(l)}</Txt>}
+                  <Txt v="price" style={{ marginTop: 4 }}>{money(unitPrice(l) * l.qty)}</Txt>
                 </View>
-              );
-            })}
+                <Stepper compact value={l.qty} onChange={(n) => setQty(l.key, n)} />
+              </View>
+            ))}
 
             {upsell.length > 0 && (
               <View style={{ marginTop: 24 }}>
@@ -61,14 +57,15 @@ export default function Cart() {
 
             <View style={s.summary}>
               <SumRow label="Subtotal" value={money(subtotal)} />
-              <SumRow label="Delivery" value={fee != null ? money(fee) : 'Set your postcode'} />
+              {caution > 0 && <SumRow label="Refundable caution fee" value={money(caution)} />}
+              <SumRow label="Delivery" value="At checkout" />
               <View style={s.rule} />
-              <SumRow label="Total" value={money(subtotal + (fee ?? 0))} bold />
+              <SumRow label="Total so far" value={money(subtotal + caution)} bold />
             </View>
           </ScrollView>
           <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-            <Button title={`Go to checkout · ${money(subtotal + (fee ?? 0))}`} onPress={() => router.push('/checkout')} />
-            <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{count} {count === 1 ? 'item' : 'items'} · Secure payment by Revolut</Txt>
+            <Button title={business.checkoutOpen ? 'Go to checkout' : 'Checkout paused'} disabled={!business.checkoutOpen} onPress={() => router.push('/checkout')} />
+            <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{count} {count === 1 ? 'item' : 'items'} · Pay by bank transfer</Txt>
           </View>
         </>
       )}

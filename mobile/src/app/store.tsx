@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BasketBar, Icon, IconButton, Photo, Pill, ProductRow, Txt } from '@/components/ui';
 import { business, categories, products } from '@/lib/data';
 import { useStore } from '@/lib/store';
-import { C, F, money, R, shadow } from '@/lib/theme';
+import { C, F, R, shadow } from '@/lib/theme';
 
 type Section = { id: string; title: string; items: typeof products };
 
@@ -19,7 +19,7 @@ export default function Store() {
     () => [
       { id: 'popular', title: 'Popular', items: products.filter((p) => p.featured) },
       ...categories.map((c) => ({ id: c.id, title: c.name, items: products.filter((p) => p.cat === c.id) })),
-    ],
+    ].filter((sct) => sct.items.length > 0),
     []
   );
 
@@ -110,17 +110,17 @@ export default function Store() {
           <View style={s.info}>
             <View style={s.logo}><Text style={{ fontFamily: F.displayItalic, fontSize: 26, color: C.red }}>B</Text></View>
             <Txt v="h1" style={{ marginTop: 8 }}>B-Lite Food</Txt>
-            <Txt v="small" style={{ marginTop: 2 }}>Authentic Nigerian · Hatfield, Hertfordshire</Txt>
+            <Txt v="small" style={{ marginTop: 2 }}>Authentic Nigerian{business.address ? ' · ' + business.address : ''}</Txt>
             <View style={s.stats}>
-              <View style={s.stat}><View style={s.statRow}><Icon name="hourglass-outline" size={14} /><Txt v="label">{business.prepTime}</Txt></View><Txt v="small">Prep time</Txt></View>
+              <View style={s.stat}><View style={s.statRow}><Icon name="hourglass-outline" size={14} /><Txt v="label">24 hours</Txt></View><Txt v="small">Notice</Txt></View>
               <View style={s.statSep} />
-              <View style={s.stat}><View style={s.statRow}><Icon name="time-outline" size={14} /><Txt v="label">{address?.eta ?? '30–50 min'}</Txt></View><Txt v="small">Delivery</Txt></View>
+              <View style={s.stat}><View style={s.statRow}><Icon name="restaurant-outline" size={14} /><Txt v="label">{products.length}</Txt></View><Txt v="small">Dishes</Txt></View>
               <View style={s.statSep} />
-              <View style={s.stat}><View style={s.statRow}><Icon name="bicycle-outline" size={15} /><Txt v="label">{address ? money(address.fee) : 'From £2.50'}</Txt></View><Txt v="small">Fee</Txt></View>
+              <View style={s.stat}><View style={s.statRow}><Icon name="bicycle-outline" size={15} /><Txt v="label" numberOfLines={1}>{address ? address.area : 'Choose area'}</Txt></View><Txt v="small">Delivery</Txt></View>
             </View>
             <View style={s.notice}>
               <Icon name="information-circle" size={18} color="#8A5300" />
-              <Txt v="small" color="#8A5300" style={{ flex: 1 }}>Quick meals can arrive today (order by 17:00). Everything else is cooked fresh to order for delivery from tomorrow. Deliveries {business.deliveryHours}.</Txt>
+              <Txt v="small" color="#8A5300" style={{ flex: 1 }}>Everything is cooked fresh to order. Choose a delivery or pickup time at least 24 hours ahead at checkout.</Txt>
             </View>
           </View>
         </View>

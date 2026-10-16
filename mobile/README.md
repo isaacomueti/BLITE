@@ -4,19 +4,27 @@ The Blite ordering app. It uses Glovo's interaction patterns (address bar and se
 coloured header, category bubbles, promo carousel, store page with sticky category tabs,
 "+" quantity bubbles, floating **View basket** bar, product sheet, one-page checkout and
 order tracking) styled with Blite's own design system (red/orange, Fraunces + Inter).
-It lives in `mobile/` of the website repo and uses the **live B-Lite menu, prices and
-photography** from the website in the same repo (deployed at blite-six.vercel.app).
+It reads the **live menu, prices, delivery areas, accounts and orders from blitefood.co.uk**
+through the website's JSON API (`/api/v1`, Laravel), so the app and the website share one
+database: an order placed in the app appears in the website's admin, and customers sign in
+with their existing website email and password.
 
-## Updating the menu and photos
+## Where the data comes from
 
-```bash
-cd mobile
-node scripts/import-catalogue.mjs
-```
+| Data | Source |
+| --- | --- |
+| Menu, sizes and prices, categories, equipment, events | `GET /foods`, `/categories`, `/equipment`, `/galleries` — cached on the device for offline start |
+| Delivery areas and fees | `GET /counties` (county → area, fee = base + basket weight × per-kg rate) |
+| Shop status, pickup point, contact, bank details | `GET /config` (the admin's checkout / maintenance switches) |
+| Prices at checkout | `POST /quote` — the server prices the basket, coupon and delivery |
+| Accounts | `POST /auth/login`, `/auth/register`, `/auth/forgot-password` (bearer token) |
+| Orders | `POST /orders`, `GET /orders`, `GET /orders/{reference}`, `POST /orders/{reference}/cancel` |
+| Catering enquiries | `POST /bookings` |
 
-This reads the website's `assets/js/data.js` and `assets/img/`, resizes every photo for phones
-(≈2.8 MB for 71 photos), and regenerates `src/lib/catalogue.json`, `src/lib/photos.ts` and
-`assets/photos/`. Commit the result. Anything without a photo falls back to drawn art.
+The API address is `expo.extra.apiUrl` in `app.json` (default `https://blitefood.co.uk/api/v1`).
+Point it at a local Laravel server (for example `http://192.168.1.20:8000/api/v1`) to test
+against a copy of the database. Bundled photos in `assets/photos/` are only used for
+decorative promo art; dish and equipment photos come from the website.
 
 Built on **Expo SDK 58** with Expo Router, TypeScript and Reanimated.
 
@@ -62,38 +70,30 @@ Play Store bundle (`.aab`).
 
 | Route | Screen |
 | --- | --- |
-| `/(tabs)/index` | Home: delivery address, search, open/closed status, category bubbles, promo carousel, store card, quick meals, popular, catering/equipment |
+| `/(tabs)/index` | Home: delivery address, search, shop status, category bubbles, promo carousel, store card, quick meals, popular, catering/equipment |
 | `/(tabs)/search` | Live search, popular searches, categories, empty state |
-| `/(tabs)/orders` | Order history with live badge and reorder |
-| `/(tabs)/profile` | Account placeholder, favourites, services, help (WhatsApp, call, email) |
-| `/store?cat=` | Store page: hero, rating/ETA/fee, category tabs that pin under the header and follow scroll, product rows |
-| `/product/[id]` | Product sheet: portion (required), add-ons, allergens, quantity, favourite |
-| `/cart` | Basket: steppers, next-day notice, upsell carousel, totals |
-| `/address` | Postcode-first delivery check (UK), saves fee and ETA |
-| `/checkout` | Delivery/pickup, ASAP or scheduled slot, rider note, mobile number, payment method, totals |
-| `/order/[id]` | Confirmation + tracking: animated progress, timeline, receipt, help |
-| `/catering` | 3-step enquiry with progressive disclosure and dietary capture |
-| `/equipment` | Equipment hire: live per-hire prices, hire length, quote request |
+| `/(tabs)/orders` | Order history from the website (app and web orders), pull to refresh |
+| `/(tabs)/profile` | Sign in / account, favourites, services, help (live chat, WhatsApp, call, email) |
+| `/store?cat=` | Store page: category tabs that pin under the header and follow scroll, product rows |
+| `/product/[id]` | Product sheet: size (required), quantity, favourite |
+| `/cart` | Basket: food and equipment hire, steppers, upsell carousel, totals |
+| `/address` | County → delivery area → street, town and postcode |
+| `/checkout` | Sign-in gate, delivery/pickup, date and time (24 hours ahead), phone, note, coupon, bank transfer, server-priced totals |
+| `/order/[id]` | Confirmation, bank transfer details, status timeline, receipt, cancel unpaid order |
+| `/login`, `/register` | Website account sign-in, password reset email, registration |
+| `/catering` | 2-step catering enquiry (date, time, guests, contact) |
+| `/equipment` | Equipment hire: start date, 1–4 days, quantity, added to the basket |
 
-## Business rules carried over from the site
+## Business rules (same as the website)
 
-- Deliveries run 08:00–18:00, Monday to Saturday (no Sunday slots).
-- Quick meals can arrive the same day if ordered by 17:00. Everything else is cooked to order (3 hours' prep) for delivery from **tomorrow**: ASAP is disabled when the basket contains any of it.
-- Each portion has its own live price (e.g. Egusi 1 litre £25, 2 litres £45, 4 litres £86).
-- Hire equipment is priced per hire, as on the live site; stock and availability are confirmed with the quote.
-- Delivery fee and ETA come from the postcode zone (`src/lib/data.ts`, placeholder zones around Hatfield; confirm with operations).
-- Allergens aren't published on the live site yet, so every dish asks customers to tell the kitchen about allergies. Confirmed allergen lists must be added before launch.
-
-## What's simulated (prototype) vs production
-
-| Prototype | Production |
-| --- | --- |
-| Menu imported into `src/lib/catalogue.json` | Supabase API shared with the website |
-| Photos bundled in the app (imported from the website) | Photos served from Supabase Storage / a CDN |
-| Basket, orders, favourites in AsyncStorage | Basket on device; orders from the API |
-| "Place order" creates the order locally | Server re-prices the basket → **Revolut Business** hosted checkout (Apple Pay, Google Pay, cards, Revolut Pay) → **webhook** confirms the order |
-| Tracking progress from elapsed time | Supabase Realtime subscription to the order's status (set by the kitchen in admin) |
-| Sign-in buttons show a notice | Supabase Auth: email magic link, Sign in with Apple, Google |
+- Customers must be signed in to place an order.
+- Every order needs at least 24 hours' notice; the customer picks a delivery or pickup date and time.
+- Delivery fee = area base fee + basket weight × the area's per-kg rate. Pickup is free.
+- Coupons take a percentage off the subtotal (including equipment caution fees).
+- Equipment is hired per day for 1–4 days, starting tomorrow at the earliest, with a refundable caution fee per item.
+- Payment is by bank transfer: the order page shows the bank details and the order reference.
+- When the admin pauses checkout or turns on maintenance, the app stops taking orders.
+- Allergens aren't published by the website yet, so every dish asks customers to tell the kitchen about allergies.
 
 ## Shipping to the stores
 

@@ -26,7 +26,7 @@ export default function ProductSheet() {
     );
   }
 
-  const unit = unitPrice({ id: p.id, portion, addons });
+  const unit = unitPrice({ kind: 'food', id: p.id, portion, addons });
   const fav = favs.includes(p.id);
   const close = () => (router.canGoBack() ? router.back() : router.replace('/store'));
 
@@ -43,7 +43,7 @@ export default function ProductSheet() {
 
         <View style={{ padding: 20 }}>
           <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
-            {p.quick ? <Pill tone="green" icon="flash">Same-day delivery</Pill> : <Pill tone="orange" icon="time">Cooked to order · from tomorrow</Pill>}
+            {p.available ? <Pill tone="orange" icon="time">Cooked to order · 24 hours’ notice</Pill> : <Pill tone="muted">Not available right now</Pill>}
             {!!p.prep && <Pill tone="muted" icon="hourglass-outline">{`Prep ${p.prep}`}</Pill>}
           </View>
           <Txt v="h1">{p.name}</Txt>
@@ -103,7 +103,8 @@ export default function ProductSheet() {
       <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
         <Stepper value={qty} min={1} onChange={(n) => setQty(Math.max(1, Math.min(20, n)))} />
         <Button
-          title={`Add ${qty} · ${money(unit * qty)}`}
+          title={p.available ? `Add ${qty} · ${money(unit * qty)}` : 'Not available'}
+          disabled={!p.available}
           style={{ flex: 1 }}
           onPress={() => {
             add(p.id, { portion, addons, qty });

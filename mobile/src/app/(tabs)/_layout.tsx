@@ -3,7 +3,6 @@ import { ColorValue } from 'react-native';
 
 import { Icon, IconName } from '@/components/ui';
 import { useStore } from '@/lib/store';
-import { useNow } from '@/lib/use-now';
 import { C, F } from '@/lib/theme';
 
 const icon = (name: IconName, active: IconName) =>
@@ -13,8 +12,8 @@ const icon = (name: IconName, active: IconName) =>
 
 export default function TabsLayout() {
   const { orders } = useStore();
-  const now = useNow();
-  const live = orders.filter((o) => now - new Date(o.placedAt).getTime() < 3 * 3600e3).length;
+  // Orders still to be paid, cooked or delivered.
+  const live = orders.filter((o) => o.status === 'pending' || o.status === 'processing').length;
   return (
     <Tabs
       screenOptions={{

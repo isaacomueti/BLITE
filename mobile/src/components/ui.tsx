@@ -42,11 +42,12 @@ const txt = StyleSheet.create({
 
 /* ---------- Photos ---------- */
 /**
- * A photo from the imported catalogue (see src/lib/photos.ts). `cutout` photos are transparent
- * dishes shown whole; everything else fills its box. Missing photos fall back to drawn art.
+ * A photo: either a full URL from the website API, or a key for the bundled photos in
+ * src/lib/photos.ts. `cutout` photos are transparent dishes shown whole; everything else fills
+ * its box. Missing photos fall back to drawn art.
  */
 export function Photo({ k, style, cutout, fallback = 'rice', alt }: { k: string | null | undefined; style?: StyleProp<ImageStyle>; cutout?: boolean; fallback?: string; alt?: string }) {
-  const src = k ? photos[k] : undefined;
+  const src = k ? (/^https?:\/\//.test(k) ? { uri: k } : photos[k]) : undefined;
   if (!src) {
     const flat = StyleSheet.flatten(style) ?? {};
     const size = typeof flat.width === 'number' ? flat.width : 100;
@@ -145,6 +146,7 @@ export function AddBubble({ product, style }: { product: Product; style?: StyleP
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const hasOptions = product.portions.length > 1 || product.addons.length > 0;
+  if (!product.available) return <Pill tone="muted" style={style}>Sold out</Pill>;
   return (
     <Animated.View style={[anim, style]}>
       <Pressable
@@ -172,7 +174,7 @@ export function ProductRow({ p }: { p: Product }) {
         <Txt v="small" numberOfLines={2} style={{ marginTop: 4 }}>{p.desc}</Txt>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <Txt v="price">{p.portions.length > 1 ? 'from ' : ''}{money(p.price)}</Txt>
-          {p.quick ? <Pill tone="green" icon="flash">Same day</Pill> : p.featured ? <Pill tone="orange" icon="flame">Popular</Pill> : null}
+          {p.featured ? <Pill tone="orange" icon="flame">Popular</Pill> : null}
         </View>
       </View>
       <View style={styles.rowImg}>
@@ -189,7 +191,6 @@ export function ProductTile({ p, width = 156 }: { p: Product; width?: number }) 
     <Pressable onPress={() => router.push({ pathname: '/product/[id]', params: { id: p.id } })} style={({ pressed }) => [{ width }, pressed && { opacity: 0.9 }]}>
       <View style={[styles.tileImg, { width, height: width * 0.86 }]}>
         <Photo k={p.photo} style={{ width, height: width * 0.86, borderRadius: R.img }} alt={p.name} />
-        {p.quick && <Pill tone="white" icon="flash" style={{ position: 'absolute', top: 8, left: 8 }}>Same day</Pill>}
         <AddBubble product={p} style={{ position: 'absolute', right: 8, bottom: 8 }} />
       </View>
       <Txt v="label" numberOfLines={1} style={{ marginTop: 8 }}>{p.name}</Txt>

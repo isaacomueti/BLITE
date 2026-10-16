@@ -14,9 +14,10 @@ No build step and no dependencies. State (basket, orders, favourites, enquiries)
 ## Mobile app
 
 A Glovo-style ordering app for iOS and Android (Expo / React Native) lives in [`mobile/`](mobile/README.md).
-It uses this website's menu, prices and photos: after changing `assets/js/data.js` or `assets/img/`,
-run `cd mobile && node scripts/import-catalogue.mjs` to refresh the app. `mobile/` is excluded from
-the Vercel deployment by `.vercelignore`.
+It reads the live menu, delivery areas, accounts and orders from the blitefood.co.uk Laravel
+app through its `/api/v1` JSON API, so app and website orders share one database. This design is
+also being built into the Laravel app itself (branch `feat/blite-redesign` of that repo).
+`mobile/` is excluded from the Vercel deployment by `.vercelignore`.
 
 ## Pages
 

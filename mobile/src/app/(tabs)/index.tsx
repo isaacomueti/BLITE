@@ -4,21 +4,16 @@ import { FlatList, Pressable, ScrollView, StyleSheet, useWindowDimensions, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BasketBar, CategoryBubble, Icon, Photo, ProductTile, SectionTitle, Txt } from '@/components/ui';
-import { business, categories, products, shortName } from '@/lib/data';
+import { business, categories, products, QUICK_CATEGORY, shortName } from '@/lib/data';
 import { useStore } from '@/lib/store';
-import { C, F, money, R, shadow } from '@/lib/theme';
+import { C, F, R, shadow } from '@/lib/theme';
 
 const promos = [
-  { id: 'quick', eyebrow: 'Order by 17:00', title: 'Same-day\nquick meals', cta: 'Order now', bg: C.red, fg: '#fff', photo: 'menu/jollof-rice-meal', go: () => router.push({ pathname: '/store', params: { cat: 'quick' } }) },
-  { id: 'trays', eyebrow: 'Cooked to order', title: 'Soups & stews\nfor tomorrow', cta: 'See soups', bg: C.orange, fg: '#fff', photo: 'menu/assorted-egusi-soup', go: () => router.push({ pathname: '/store', params: { cat: 'soups' } }) },
+  { id: 'quick', eyebrow: 'Freshly cooked', title: 'Quick meals\nfor tomorrow', cta: 'Order now', bg: C.red, fg: '#fff', photo: 'menu/jollof-rice-meal', go: () => router.push({ pathname: '/store', params: { cat: QUICK_CATEGORY } }) },
+  { id: 'menu', eyebrow: 'Cooked to order', title: 'Soups, stews\n& party trays', cta: 'See the menu', bg: C.orange, fg: '#fff', photo: 'menu/assorted-egusi-soup', go: () => router.push('/store') },
   { id: 'catering', eyebrow: 'Weddings to office lunches', title: 'Catering that\npeople remember', cta: 'Get a quote', bg: C.dark, fg: '#fff', photo: 'events/pauline-at-85', go: () => router.push('/catering') },
-  { id: 'equipment', eyebrow: 'From £5 per hire', title: 'Hire chafing\ndishes & more', cta: 'Browse', bg: '#FFE3E6', fg: C.dark, photo: 'hire/chafing-dishes', go: () => router.push('/equipment') },
+  { id: 'equipment', eyebrow: 'Book by the day', title: 'Hire chafing\ndishes & more', cta: 'Browse', bg: '#FFE3E6', fg: C.dark, photo: 'hire/chafing-dishes', go: () => router.push('/equipment') },
 ];
-
-function isOpen() {
-  const h = new Date().getHours();
-  return h >= business.orderHours.open && h < business.orderHours.close;
-}
 
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -26,11 +21,13 @@ export default function Home() {
   const { address } = useStore();
   const [slide, setSlide] = useState(0);
   const promoW = width - 48;
-  const quick = products.filter((p) => p.quick);
-  const popular = products.filter((p) => p.featured && !p.quick);
-  const sweet = products.filter((p) => p.cat === 'pastries');
+  const quick = products.filter((p) => p.cat === QUICK_CATEGORY);
+  const popular = products.filter((p) => p.featured);
+  // Third rail: the first category that isn't quick meals.
+  const extraCat = categories.find((c) => c.id !== QUICK_CATEGORY);
+  const sweet = extraCat ? products.filter((p) => p.cat === extraCat.id) : [];
   const listRef = useRef<FlatList>(null);
-  const open = isOpen();
+  const open = business.checkoutOpen && !business.maintenance;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -43,7 +40,7 @@ export default function Home() {
               <View style={{ flexShrink: 1 }}>
                 <Txt v="small" color="rgba(255,255,255,0.8)" style={{ fontSize: 12 }}>Deliver to</Txt>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Txt v="label" color="#fff" numberOfLines={1} style={{ fontSize: 15 }}>{address ? `${address.line1 || 'Home'}, ${address.postcode}` : 'Add your postcode'}</Txt>
+                  <Txt v="label" color="#fff" numberOfLines={1} style={{ fontSize: 15 }}>{address ? `${address.line1 || 'Home'}, ${address.postcode}` : 'Add your address'}</Txt>
                   <Icon name="chevron-down" size={16} color="#fff" />
                 </View>
               </View>
@@ -65,7 +62,7 @@ export default function Home() {
         <View style={[s.status, !open && { backgroundColor: C.orangeSoft }]}>
           <View style={[s.dot, { backgroundColor: open ? C.green : C.orange }]} />
           <Txt v="small" color={open ? '#16663A' : '#8A5300'} style={{ flex: 1 }}>
-            {open ? 'Kitchen open · Quick meals arrive today' : 'Ordering opens at 07:00 · Schedule for tomorrow'}
+            {open ? 'Taking orders · Choose a delivery or pickup time 24 hours ahead' : 'Ordering is paused right now — back soon'}
           </Txt>
         </View>
 
@@ -117,17 +114,17 @@ export default function Home() {
             <View style={s.storeLogo}><Txt style={{ fontFamily: F.displayItalic, fontSize: 20, color: C.red }}>B</Txt></View>
           </View>
           <View style={{ padding: 14 }}>
-            <Txt v="h3" style={{ fontSize: 17 }}>B-Lite Food · Hatfield</Txt>
+            <Txt v="h3" style={{ fontSize: 17 }}>B-Lite Food</Txt>
             <View style={s.meta}>
-              <Icon name="time-outline" size={13} color={C.muted} /><Txt v="small">{address?.eta ?? '30–50 min'}</Txt>
-              <Txt v="small">·</Txt><Icon name="bicycle-outline" size={14} color={C.muted} /><Txt v="small">{address ? money(address.fee) : 'from £2.50'}</Txt>
+              <Icon name="time-outline" size={13} color={C.muted} /><Txt v="small">Order 24 hours ahead</Txt>
+              <Txt v="small">·</Txt><Icon name="bicycle-outline" size={14} color={C.muted} /><Txt v="small">{address ? address.area : 'Delivery or pickup'}</Txt>
             </View>
-            <Txt v="small" style={{ marginTop: 4 }}>Nigerian · {products.length} dishes · Rice · Soups · Small chops</Txt>
+            <Txt v="small" style={{ marginTop: 4 }}>Nigerian · {products.length} dishes · {categories.slice(0, 3).map((c) => c.name).join(' · ')}</Txt>
           </View>
         </Pressable>
 
         <View style={{ height: 28 }} />
-        <SectionTitle eyebrow="Arrives today" title="Quick meals" action="See all" onAction={() => router.push({ pathname: '/store', params: { cat: 'rice' } })} />
+        {quick.length > 0 && <SectionTitle eyebrow="Freshly cooked" title="Quick meals" action="See all" onAction={() => router.push({ pathname: '/store', params: { cat: QUICK_CATEGORY } })} />}
         <FlatList horizontal data={quick} keyExtractor={(p) => p.id} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }} renderItem={({ item }) => <ProductTile p={item} />} />
 
         <View style={{ height: 28 }} />
@@ -145,12 +142,12 @@ export default function Home() {
           <Pressable onPress={() => router.push('/equipment')} style={[s.service, { backgroundColor: C.orangeSoft }]}>
             <Icon name="cube" size={22} color={C.orange} />
             <Txt v="h3" style={{ marginTop: 10 }}>Equipment hire</Txt>
-            <Txt v="small">Chafing dishes, plates, cutlery</Txt>
+            <Txt v="small">Chafing dishes, plates, drums</Txt>
           </Pressable>
         </View>
 
         <View style={{ height: 28 }} />
-        <SectionTitle title="Pastries & small chops" />
+        {extraCat && <SectionTitle title={extraCat.name} action="See all" onAction={() => router.push({ pathname: '/store', params: { cat: extraCat.id } })} />}
         <FlatList horizontal data={sweet} keyExtractor={(p) => p.id} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }} renderItem={({ item }) => <ProductTile p={item} />} />
       </ScrollView>
       <BasketBar safe={false} />
