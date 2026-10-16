@@ -39,6 +39,25 @@ npx expo lint
 npx expo export -p web   # static web build in dist/
 ```
 
+## Install on an Android phone
+
+**Quickest, no build:** install **Expo Go** from the Play Store, then on your computer run
+`cd mobile && npm install && npx expo start` and scan the QR code with Expo Go
+(phone and computer on the same Wi-Fi; add `--tunnel` if they aren't).
+
+**A real APK you can install and share:** builds in Expo's cloud, so no Android Studio is needed.
+
+```bash
+cd mobile
+npx eas-cli@latest login                                   # free Expo account
+npx eas-cli@latest build --platform android --profile preview
+```
+
+When the build finishes (about 10–20 minutes) EAS prints a link and QR code. Open it on the phone,
+download the `.apk` and install it (Android will ask you to allow installs from your browser).
+The `preview` profile in `eas.json` produces an installable APK; `production` produces the
+Play Store bundle (`.aab`).
+
 ## Screens
 
 | Route | Screen |
