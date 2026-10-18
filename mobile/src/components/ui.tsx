@@ -49,7 +49,8 @@ const txt = StyleSheet.create({
 export function Photo({ k, style, cutout, fallback = 'rice', alt }: { k: string | null | undefined; style?: StyleProp<ImageStyle>; cutout?: boolean; fallback?: string; alt?: string }) {
   const src = k ? (/^https?:\/\//.test(k) ? { uri: k } : photos[k]) : undefined;
   if (!src) {
-    const flat = StyleSheet.flatten(style) ?? {};
+    // Only the width is needed; React Native 0.88 types flatten() for animated styles, so read it loosely.
+    const flat = (StyleSheet.flatten as (s: unknown) => { width?: unknown } | undefined)(style) ?? {};
     const size = typeof flat.width === 'number' ? flat.width : 100;
     return <View style={[style as StyleProp<ViewStyle>, { alignItems: 'center', justifyContent: 'center' }]}><Dish kind={fallback} seed={k ?? ''} size={size * 0.9} /></View>;
   }

@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, ApiOrder, ApiUser, BasketItem, loadToken, setToken } from './api';
-import { equipmentById, productById, toApiDate } from './data';
+import { equipmentById, onCatalogueChange, productById, toApiDate } from './data';
 
 export type CartLine = {
   key: string;
@@ -76,6 +76,9 @@ function useStoreValue() {
   const [user, setUser] = useState<ApiUser | null>(null);
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [ready, setReady] = useState(false);
+  // Bumped when the menu loads or refreshes, so basket prices and totals are recalculated.
+  const [catalogueVersion, setCatalogueVersion] = useState(0);
+  useEffect(() => onCatalogueChange(() => setCatalogueVersion((v) => v + 1)), []);
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -195,17 +198,26 @@ function useStoreValue() {
   }, [user]);
 
   const count = state.cart.reduce((s, l) => s + l.qty, 0);
-  const subtotal = state.cart.reduce((s, l) => s + unitPrice(l) * l.qty, 0);
-  // The website charges an item's caution fee once per booking line, whatever the quantity.
-  const caution = state.cart.reduce((s, l) => s + (l.kind === 'equipment' ? equipmentById(l.id)?.caution ?? 0 : 0), 0);
+  // Prices come from the module-level catalogue, which React can't see change: recompute when
+  // the basket or the catalogue version changes (the React Compiler would otherwise keep a stale
+  // total from before the menu loaded).
+  const { subtotal, caution } = useMemo(
+    () => ({
+      subtotal: state.cart.reduce((s, l) => s + unitPrice(l) * l.qty, 0),
+      // The website charges an item's caution fee once per booking line, whatever the quantity.
+      caution: state.cart.reduce((s, l) => s + (l.kind === 'equipment' ? equipmentById(l.id)?.caution ?? 0 : 0), 0),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.cart, catalogueVersion]
+  );
 
   return useMemo(
     () => ({
-      ...state, ready, user, orders, count, subtotal, caution,
+      ...state, ready, user, orders, count, subtotal, caution, catalogueVersion,
       add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, toggleFav,
       signIn, register, signOut, updateName, refreshOrders, setOrders,
     }),
-    [state, ready, user, orders, count, subtotal, caution, add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, toggleFav, signIn, register, signOut, updateName, refreshOrders]
+    [state, ready, user, orders, count, subtotal, caution, catalogueVersion, add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, toggleFav, signIn, register, signOut, updateName, refreshOrders]
   );
 }
 

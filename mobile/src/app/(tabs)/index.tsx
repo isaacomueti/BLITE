@@ -62,7 +62,9 @@ export default function Home() {
         <View style={[s.status, !open && { backgroundColor: C.orangeSoft }]}>
           <View style={[s.dot, { backgroundColor: open ? C.green : C.orange }]} />
           <Txt v="small" color={open ? '#16663A' : '#8A5300'} style={{ flex: 1 }}>
-            {open ? 'Taking orders · Choose a delivery or pickup time 24 hours ahead' : 'Ordering is paused right now — back soon'}
+            {business.offline
+              ? 'Browse the menu · To order, add dishes and send your basket to us on WhatsApp'
+              : open ? 'Taking orders · Choose a delivery or pickup time 24 hours ahead' : 'Ordering is paused right now — back soon'}
           </Txt>
         </View>
 

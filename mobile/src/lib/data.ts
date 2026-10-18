@@ -8,6 +8,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { api, ApiCategory, ApiConfig, ApiCounty, ApiEquipment, ApiFood, ApiGallery } from './api';
+import bundled from './catalogue.json';
 
 export type Portion = { id: string; name: string; price: number };
 export type Addon = { id: string; name: string; price: number };
@@ -29,6 +30,8 @@ export type Business = {
   name: string; address: string; phone: string; phoneHref: string; email: string; whatsapp: string; chatUrl: string;
   pickupLocation: string; pickupTime: string; checkoutOpen: boolean; maintenance: boolean; leadHours: number; maxRentalDays: number;
   bank: ApiConfig['bank'];
+  /** True while showing the menu bundled in the app because the website API can't be reached. */
+  offline: boolean;
 };
 
 const TINTS = ['#FFE9DA', '#FFF1DB', '#FFE3E6', '#FDF0D8', '#FFF4E3', '#FFF6D6', '#FBE4EA', '#F3EEE9', '#E9F2EC', '#FDE8DF'];
@@ -43,8 +46,18 @@ export let events: BliteEvent[] = [];
 export let counties: County[] = [];
 export let business: Business = {
   name: 'B-Lite Food', address: '', phone: '', phoneHref: '', email: '', whatsapp: '', chatUrl: '', pickupLocation: '', pickupTime: '',
-  checkoutOpen: true, maintenance: false, leadHours: 24, maxRentalDays: 4, bank: null,
+  checkoutOpen: true, maintenance: false, leadHours: 24, maxRentalDays: 4, bank: null, offline: false,
 };
+
+/* Screens and the basket re-render when the catalogue changes (first load, refresh, fallback). */
+const listeners = new Set<() => void>();
+export function onCatalogueChange(fn: () => void) {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
+const notify = () => listeners.forEach((fn) => fn());
 
 type Raw = { config: ApiConfig; categories: ApiCategory[]; foods: ApiFood[]; equipment: ApiEquipment[]; galleries: ApiGallery[]; counties: ApiCounty[] };
 const CACHE_KEY = 'blite.catalogue.v2';
@@ -84,6 +97,7 @@ function apply(raw: Raw) {
     leadHours: c.min_lead_hours,
     maxRentalDays: c.max_rental_days,
     bank: c.bank,
+    offline: false,
   };
   products = raw.foods.filter((f) => f.sizes.length > 0).map(toProduct);
   const used = new Set(products.map((p) => p.cat));
@@ -97,6 +111,47 @@ function apply(raw: Raw) {
   }));
   events = raw.galleries.map((g) => ({ id: g.slug, title: g.title, type: '', label: '', photos: g.cover ? [g.cover] : [] }));
   counties = raw.counties;
+  notify();
+}
+
+/**
+ * Fallback for when the website API can't be reached and nothing is cached: the menu, hire list
+ * and photos bundled in the app (src/lib/catalogue.json, from the website). Customers can browse;
+ * ordering in the app needs the API, so checkout points them to phone, WhatsApp and chat instead.
+ */
+export function applyBundled() {
+  const b = bundled;
+  // The website names its quick-meal category "quick-meal"; the bundled copy calls it "quick".
+  const cat = (id: string) => (id === 'quick' ? QUICK_CATEGORY : id);
+  business = {
+    name: b.business.name,
+    address: b.business.address,
+    phone: b.business.phone,
+    phoneHref: b.business.phoneHref,
+    email: b.business.email,
+    whatsapp: b.business.whatsapp,
+    chatUrl: 'https://tawk.to/chat/68efe7d17690531950dd3405/1j7ki33gd',
+    pickupLocation: b.business.address,
+    pickupTime: '',
+    checkoutOpen: false,
+    maintenance: false,
+    leadHours: 24,
+    maxRentalDays: 4,
+    bank: null,
+    offline: true,
+  };
+  products = b.products.map((p) => ({
+    id: p.id, dbId: 0, name: p.name, cat: cat(p.cat), price: p.price, desc: p.desc, prep: p.prep,
+    quick: false, featured: p.featured, available: true, portions: p.portions, addons: [], allergens: null, photo: p.photo,
+  }));
+  categories = b.categories.map((c, i) => ({ ...c, id: cat(c.id), tint: TINTS[i % TINTS.length] }));
+  equipment = b.equipment.map((e) => ({
+    id: e.id, dbId: 0, name: e.name, price: e.price, per: 'day', group: e.group, desc: e.desc,
+    caution: 0, bookable: false, photo: e.photo, photos: e.photo ? [e.photo] : [],
+  }));
+  events = b.events;
+  counties = [];
+  notify();
 }
 
 /** Show the cached catalogue straight away. Returns false when nothing is cached yet. */

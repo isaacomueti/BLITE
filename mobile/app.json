@@ -41,7 +41,16 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://blitefood.co.uk/api/v1"
-    }
+      "apiUrl": "https://blitefood.co.uk/api/v1",
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "388148af-7584-4185-ba3c-b3655c5410e9"
+      }
+    },
+    "owner": "isaacomueti"
   }
 }

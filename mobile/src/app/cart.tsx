@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
-import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, EmptyState, Icon, IconButton, Photo, ProductTile, Stepper, SumRow, Txt } from '@/components/ui';
 import { business, products } from '@/lib/data';
-import { lineLabel, lineName, linePhoto, unitPrice, useStore } from '@/lib/store';
+import { CartLine, lineLabel, lineName, linePhoto, unitPrice, useStore } from '@/lib/store';
 import { C, money, R } from '@/lib/theme';
 
 export default function Cart() {
@@ -64,13 +64,33 @@ export default function Cart() {
             </View>
           </ScrollView>
           <View style={[s.bar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-            <Button title={business.checkoutOpen ? 'Go to checkout' : 'Checkout paused'} disabled={!business.checkoutOpen} onPress={() => router.push('/checkout')} />
-            <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{count} {count === 1 ? 'item' : 'items'} · Pay by bank transfer</Txt>
+            {business.offline ? (
+              <>
+                <Button title="Send order on WhatsApp" icon="logo-whatsapp" onPress={() => Linking.openURL(whatsappOrderUrl(lines, subtotal + caution))} />
+                {!!business.phoneHref && <Button title="Call to order" variant="ghost" size="md" icon="call-outline" style={{ marginTop: 8 }} onPress={() => Linking.openURL(business.phoneHref)} />}
+              </>
+            ) : (
+              <>
+                <Button title={business.checkoutOpen ? 'Go to checkout' : 'Checkout paused'} disabled={!business.checkoutOpen} onPress={() => router.push('/checkout')} />
+                <Txt v="small" style={{ textAlign: 'center', marginTop: 8 }}>{count} {count === 1 ? 'item' : 'items'} · Pay by bank transfer</Txt>
+              </>
+            )}
           </View>
         </>
       )}
     </View>
   );
+}
+
+/** WhatsApp link with the basket written out, for ordering while in-app checkout is unavailable. */
+function whatsappOrderUrl(lines: CartLine[], total: number) {
+  const text = [
+    'Hello B-Lite, I would like to order:',
+    ...lines.map((l) => `• ${l.qty} × ${lineName(l)}${lineLabel(l) ? ` (${lineLabel(l)})` : ''} — ${money(unitPrice(l) * l.qty)}`),
+    `Total before delivery: ${money(total)}`,
+  ].join('\n');
+  const base = business.whatsapp || 'https://wa.me/';
+  return `${base}${base.includes('?') ? '&' : '?'}text=${encodeURIComponent(text)}`;
 }
 
 const s = StyleSheet.create({

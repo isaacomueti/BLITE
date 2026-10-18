@@ -9,12 +9,10 @@ import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Button, EmptyState } from '@/components/ui';
-import { hydrateCatalogue, loadCatalogue } from '@/lib/data';
+import { applyBundled, hydrateCatalogue, loadCatalogue } from '@/lib/data';
 import { StoreProvider, useStore } from '@/lib/store';
 import { C } from '@/lib/theme';
 
@@ -23,52 +21,44 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 // The app is light-only for now: brand colours are tuned for a cream background.
 const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: C.bg, primary: C.red, card: C.bg, text: C.dark, border: C.border } };
 
-/** Menu, prices and settings come from the website: use the cached copy at once, refresh in the background. */
-function useCatalogue() {
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [attempt, setAttempt] = useState(0);
+/**
+ * Menu, prices and settings come from the website: use the cached copy at once, refresh in the
+ * background, and fall back to the menu bundled in the app when the website can't be reached.
+ */
+function useCatalogueReady() {
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     let live = true;
     hydrateCatalogue().then(async (cached) => {
-      if (live && cached) setState('ready');
+      if (live && cached) setReady(true);
       try {
         await loadCatalogue();
-        if (live) setState('ready');
+        if (live) setReady(true);
       } catch {
-        if (live && !cached) setState('error');
+        // No connection to the website and nothing cached: show the menu bundled in the app.
+        if (live && !cached) {
+          applyBundled();
+          setReady(true);
+        }
       }
     });
     return () => {
       live = false;
     };
-  }, [attempt]);
-  return {
-    state,
-    retry: () => {
-      setState('loading');
-      setAttempt((n) => n + 1);
-    },
-  };
+  }, []);
+  return ready;
 }
 
 function Navigator() {
   const { ready } = useStore();
-  const catalogue = useCatalogue();
+  const catalogueReady = useCatalogueReady();
   const [fontsLoaded] = useFonts({ Fraunces_700Bold, Fraunces_600SemiBold_Italic, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  const loaded = ready && fontsLoaded && catalogue.state !== 'loading';
+  const loaded = ready && fontsLoaded && catalogueReady;
 
   useEffect(() => {
     if (loaded) SplashScreen.hideAsync().catch(() => {});
   }, [loaded]);
   if (!loaded) return null;
-  if (catalogue.state === 'error') {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: C.bg }}>
-        <EmptyState icon="cloud-offline-outline" title="We can't load the menu." text="Check your internet connection, then try again." />
-        <Button title="Try again" onPress={catalogue.retry} style={{ marginHorizontal: 32 }} />
-      </View>
-    );
-  }
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
