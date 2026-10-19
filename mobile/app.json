@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Blite Food",
+    "slug": "blite-food",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "blite",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "uk.co.blitefood.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "uk.co.blitefood.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F5223A",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F5223A",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 96
+        }
+      ],
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "apiUrl": "https://blitefood.co.uk/api/v1",
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "388148af-7584-4185-ba3c-b3655c5410e9"
+      }
+    },
+    "owner": "isaacomueti"
+  }
+}

@@ -11,6 +11,14 @@ python3 -m http.server 8080   # → http://localhost:8080
 No build step and no dependencies. State (basket, orders, favourites, enquiries) lives in
 `localStorage` so every flow can be clicked through end to end.
 
+## Mobile app
+
+A Glovo-style ordering app for iOS and Android (Expo / React Native) lives in [`mobile/`](mobile/README.md).
+It reads the live menu, delivery areas, accounts and orders from the blitefood.co.uk Laravel
+app through its `/api/v1` JSON API, so app and website orders share one database. This design is
+also being built into the Laravel app itself (branch `feat/blite-redesign` of that repo).
+`mobile/` is excluded from the Vercel deployment by `.vercelignore`.
+
 ## Pages
 
 | Page | File | What it demonstrates |
