@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -18,7 +18,15 @@ export default function Register() {
   const [terms, setTerms] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  // From the first-launch welcome screen, a successful sign-in goes straight to the home screen.
+  const done = () => {
+    if (from === 'welcome') {
+      router.dismissAll();
+      router.replace('/');
+    } else close();
+  };
 
   const submit = async () => {
     setError('');
@@ -29,7 +37,7 @@ export default function Register() {
     setBusy(true);
     try {
       await register({ name: name.trim(), email: email.trim().toLowerCase(), password, password_confirmation: confirm, terms });
-      close();
+      done();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
     } finally {
@@ -63,7 +71,7 @@ export default function Register() {
 
         {!!error && <View style={s.error} accessibilityRole="alert"><Icon name="alert-circle" size={18} color="#B0101F" /><Txt v="small" color="#B0101F" style={{ flex: 1 }}>{error}</Txt></View>}
         <Button title="Create account" loading={busy} onPress={submit} style={{ marginTop: 20 }} />
-        <Button title="I already have an account" variant="ghost" style={{ marginTop: 10 }} onPress={() => router.replace('/login')} />
+        <Button title="I already have an account" variant="ghost" style={{ marginTop: 10 }} onPress={() => router.replace({ pathname: '/login', params: { from: from ?? '' } })} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

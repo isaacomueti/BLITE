@@ -67,7 +67,7 @@ export const Dish = memo(function Dish({ kind, seed = '', size }: { kind: string
 type BtnProps = {
   title: string;
   onPress?: () => void;
-  variant?: 'primary' | 'secondary' | 'dark' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'dark' | 'ghost' | 'onRed';
   icon?: IconName;
   right?: ReactNode;
   disabled?: boolean;
@@ -114,6 +114,8 @@ const btn = {
   secondary: { box: { backgroundColor: '#fff', borderColor: C.red }, fg: C.red },
   dark: { box: { backgroundColor: C.dark, borderColor: C.dark }, fg: '#fff' },
   ghost: { box: { backgroundColor: '#fff', borderColor: C.border }, fg: C.dark },
+  /** Outline button for red backgrounds (welcome screen). */
+  onRed: { box: { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.55)' }, fg: '#fff' },
 };
 
 export function IconButton({ name, onPress, label, style, color = C.dark, size = 22 }: { name: IconName; onPress: () => void; label: string; style?: StyleProp<ViewStyle>; color?: string; size?: number }) {

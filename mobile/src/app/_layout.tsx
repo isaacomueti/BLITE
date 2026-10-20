@@ -8,10 +8,11 @@ import { useFonts } from 'expo-font';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { LaunchScreen } from '@/components/launch-screen';
 import { applyBundled, hydrateCatalogue, loadCatalogue } from '@/lib/data';
 import { StoreProvider, useStore } from '@/lib/store';
 import { C } from '@/lib/theme';
@@ -52,8 +53,12 @@ function useCatalogueReady() {
 function Navigator() {
   const { ready } = useStore();
   const catalogueReady = useCatalogueReady();
-  const [fontsLoaded] = useFonts({ Fraunces_700Bold, Fraunces_600SemiBold_Italic, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  const loaded = ready && fontsLoaded && catalogueReady;
+  const [fontsLoaded, fontError] = useFonts({ Fraunces_700Bold, Fraunces_600SemiBold_Italic, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  // If the brand fonts fail to load, carry on with system fonts rather than a blank screen.
+  const loaded = ready && (fontsLoaded || !!fontError) && catalogueReady;
+  // The branded launch screen sits over the app for a moment once everything has loaded.
+  const [showLaunch, setShowLaunch] = useState(true);
+  const hideLaunch = useCallback(() => setShowLaunch(false), []);
 
   useEffect(() => {
     if (loaded) SplashScreen.hideAsync().catch(() => {});
@@ -61,19 +66,23 @@ function Navigator() {
   if (!loaded) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="store" />
-      <Stack.Screen name="product/[id]" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="address" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="checkout" />
-      <Stack.Screen name="order/[id]" />
-      <Stack.Screen name="catering" />
-      <Stack.Screen name="equipment" />
-      <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="register" options={{ presentation: 'modal' }} />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="welcome" options={{ animation: 'fade' }} />
+        <Stack.Screen name="store" />
+        <Stack.Screen name="product/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="cart" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="address" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="checkout" />
+        <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="catering" />
+        <Stack.Screen name="equipment" />
+        <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="register" options={{ presentation: 'modal' }} />
+      </Stack>
+      {showLaunch && <LaunchScreen onDone={hideLaunch} />}
+    </>
   );
 }
 

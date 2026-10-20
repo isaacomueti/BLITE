@@ -25,8 +25,9 @@ export type CartLine = {
 /** A delivery address in the website's county → area model. */
 export type Address = { countyId: number; county: string; areaId: number; area: string; eta: string | null; line1: string; city: string; postcode: string };
 
-type State = { cart: CartLine[]; address: Address | null; favs: string[]; phone: string };
-const EMPTY: State = { cart: [], address: null, favs: [], phone: '' };
+/** `welcomed`: the first-launch welcome screen has been seen (signed in, registered or browsing as a guest). */
+type State = { cart: CartLine[]; address: Address | null; favs: string[]; phone: string; welcomed: boolean };
+const EMPTY: State = { cart: [], address: null, favs: [], phone: '', welcomed: false };
 const KEY = 'blite.state.v2';
 
 export function unitPrice(line: Pick<CartLine, 'kind' | 'id' | 'portion' | 'addons' | 'days'>) {
@@ -147,6 +148,7 @@ function useStoreValue() {
 
   const setAddress = useCallback((address: Address | null) => setState((s) => ({ ...s, address })), []);
   const setPhone = useCallback((phone: string) => setState((s) => ({ ...s, phone })), []);
+  const setWelcomed = useCallback(() => setState((s) => ({ ...s, welcomed: true })), []);
   const toggleFav = useCallback(
     (id: string) => {
       const on = !state.favs.includes(id);
@@ -161,12 +163,14 @@ function useStoreValue() {
     const r = await api<{ token: string; user: ApiUser }>('/auth/login', { method: 'POST', body: { email, password, device_name: 'B-Lite app' } });
     await setToken(r.token);
     setUser(r.user);
+    setState((st) => ({ ...st, welcomed: true }));
     return r.user;
   }, []);
   const register = useCallback(async (body: { name: string; email: string; password: string; password_confirmation: string; terms: boolean }) => {
     const r = await api<{ token: string; user: ApiUser }>('/auth/register', { method: 'POST', body: { ...body, device_name: 'B-Lite app' } });
     await setToken(r.token);
     setUser(r.user);
+    setState((st) => ({ ...st, welcomed: true }));
     return r.user;
   }, []);
   const signOut = useCallback(async () => {
@@ -214,10 +218,10 @@ function useStoreValue() {
   return useMemo(
     () => ({
       ...state, ready, user, orders, count, subtotal, caution, catalogueVersion,
-      add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, toggleFav,
+      add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, setWelcomed, toggleFav,
       signIn, register, signOut, updateName, refreshOrders, setOrders,
     }),
-    [state, ready, user, orders, count, subtotal, caution, catalogueVersion, add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, toggleFav, signIn, register, signOut, updateName, refreshOrders]
+    [state, ready, user, orders, count, subtotal, caution, catalogueVersion, add, hire, setQty, clearCart, qtyOf, setAddress, setPhone, setWelcomed, toggleFav, signIn, register, signOut, updateName, refreshOrders]
   );
 }
 

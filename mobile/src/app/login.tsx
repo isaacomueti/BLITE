@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -17,7 +17,15 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  // From the first-launch welcome screen, a successful sign-in goes straight to the home screen.
+  const done = () => {
+    if (from === 'welcome') {
+      router.dismissAll();
+      router.replace('/');
+    } else close();
+  };
 
   const submit = async () => {
     setError('');
@@ -26,7 +34,7 @@ export default function Login() {
     setBusy(true);
     try {
       await signIn(email.trim(), password);
-      close();
+      done();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
     } finally {
@@ -67,7 +75,7 @@ export default function Login() {
         {!!note && <View style={[s.error, { backgroundColor: C.greenSoft }]}><Icon name="mail" size={18} color={C.green} /><Txt v="small" color="#16663A" style={{ flex: 1 }}>{note}</Txt></View>}
 
         <Button title="Sign in" loading={busy} onPress={submit} style={{ marginTop: 20 }} />
-        <Button title="Create an account" variant="ghost" style={{ marginTop: 10 }} onPress={() => router.replace('/register')} />
+        <Button title="Create an account" variant="ghost" style={{ marginTop: 10 }} onPress={() => router.replace({ pathname: '/register', params: { from: from ?? '' } })} />
         <Txt v="small" style={{ textAlign: 'center', marginTop: 18 }} onPress={() => WebBrowser.openBrowserAsync('https://blitefood.co.uk/guide')}>
           By continuing you agree to our terms &amp; conditions.
         </Txt>
